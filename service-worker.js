@@ -13,25 +13,29 @@ const sw = {
   onActivate(e) {
     console.error('activate', e);
   },
+  isApiCall() {
+    // TODO: implement this method
+    return true;
+  },
   onFetch(e) {
     console.error('fetch', e);
-    console.error('caches', caches)
+    console.error('e.request', e.request);
+    console.error('e.request.url', e.request.url);
+    console.error('e.request.method', e.request.method);
+    console.error('e.request.headers', e.request.headers);
+
+    if (e.request.url === 'http://localhost:3000/api') {
+      return e.respondWith(constructResponse());
+    }
   }
 };
 
-sw.initialize();
+function constructResponse() {
+  // TODO: replace foo:bar object by mocked data
+  const data = JSON.stringify({foo: 'bar'});
+  const blob = new Blob([data]);
 
-// self.addEventListener('install', event => {
-//   console.error('install', event);
-//
-//   // All of these logging statements should be visible via the "Inspect" interface
-//   // for the relevant SW accessed via chrome://serviceworker-internals
-// });
-//
-// self.addEventListener('activate', event => {
-//   console.error('activate', event);
-// });
-//
-// self.addEventListener('fetch', event => {
-//   console.error('fetch', event);
-// });
+  return new Response(blob)
+}
+
+sw.initialize();

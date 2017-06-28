@@ -1,0 +1,25 @@
+{
+  "name": "service-worker",
+  "version": "1.0.0",
+  "description": "Experiments with service-worker",
+  "main": "service-worker.js",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dosandk/service-worker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dosandk/service-worker/issues"
+  },
+  "homepage": "https://github.com/dosandk/service-worker#readme",
+  "devDependencies": {},
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "express": "^4.15.3"
+  }
+}

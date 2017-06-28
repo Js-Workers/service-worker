@@ -16,9 +16,9 @@
     }
 
     console.error('navigator.serviceWorker', navigator.serviceWorker);
-    console.error('ServiceWorkerGlobalScope ', navigator.serviceWorker.ServiceWorkerGlobalScope);
 
-    navigator.serviceWorker.register('service-worker.js', {scope: './'})
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', {scope: '/'})
       .then(registration => {
         // At this point, registration has taken place.
         // The service worker will not handle requests until this page and any
@@ -32,20 +32,11 @@
         // document.querySelector('#status').textContent = error;
         console.error('error', error);
       });
+    }
   </script>
 
   <div id="btn">Click me please!</div>
 
-  <script>
-    const btn = document.getElementById('btn');
-
-    btn.addEventListener('click', event => {
-      console.error('click', event);
-
-      fetch('http://www.filltext.com/?rows=10')
-        .then(data => console.error(data))
-        .catch(err => console.error(err));
-    });
-  </script>
+  <script src="js/app.js"></script>
 </body>
 </html>

@@ -1,6 +1,10 @@
 # service-worker
 Experiments with service-worker
 
+# To start project
+
+* ```npm i```  
+* ```npm run dev```
 
 ### Service worker
 
