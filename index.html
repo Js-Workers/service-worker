@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    // Service workers require HTTPS (http://goo.gl/lq4gCo). If we're running on a real web server
+    // (as opposed to localhost on a custom port, which is whitelisted), then change the protocol to HTTPS.
+    if ((!location.port || location.port === '80') && location.protocol !== 'https:') {
+      location.protocol = 'https:';
+    }
+
+    console.error('navigator.serviceWorker', navigator.serviceWorker);
+    console.error('ServiceWorkerGlobalScope ', navigator.serviceWorker.ServiceWorkerGlobalScope);
+
+    navigator.serviceWorker.register('service-worker.js', {scope: './'})
+      .then(registration => {
+        // At this point, registration has taken place.
+        // The service worker will not handle requests until this page and any
+        // other instances of this page (in other tabs, etc.) have been
+        // closed/reloaded.
+        console.error('registration', registration);
+      })
+      .catch(error => {
+        // Something went wrong during registration. The service-worker.js file
+        // might be unavailable or contain a syntax error.
+        // document.querySelector('#status').textContent = error;
+        console.error('error', error);
+      });
+  </script>
+
+  <div id="btn">Click me please!</div>
+
+  <script>
+    const btn = document.getElementById('btn');
+
+    btn.addEventListener('click', event => {
+      console.error('click', event);
+
+      fetch('http://www.filltext.com/?rows=10')
+        .then(data => console.error(data))
+        .catch(err => console.error(err));
+    });
+  </script>
+</body>
+</html>
