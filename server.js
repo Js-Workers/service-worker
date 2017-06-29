@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 app.use(express.static('./'));
 
 app.get('/api', (req, res) => {
-  res.json({ riba: 'riba'});
+  res.json({server: 'ok'});
 });
 
 app.listen(port, () => console.log(`Running on localhost:${port}`));
