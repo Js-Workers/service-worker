@@ -28,20 +28,44 @@ const sw = {
   isApiCall(host) {
     return host === 'api.themoviedb.org';
   },
-  onFetchOld(event) {
+  onFetch(event) {
+    const {request} = event;
+
     console.error('fetch', event);
-    console.error('event.request', event.request);
-    console.error('event.request.url', event.request.url);
-    console.error('event.request.method', event.request.method);
-    console.error('event.request.headers', event.request.headers);
+    console.error('request', request);
+    console.error('request.url', request.url);
+    console.error('request.method', request.method);
+    console.error('request.headers', request.headers);
 
     const requestUrl = new URL(event.request.url);
 
+    // caches.delete('content')
+    // .then(() => {
+    //   return caches.create('content');
+    // })
+    // .then(contentCache => {
+    //   contentCache.add(request);
+    //
+    //   return fetch(request)
+    // })
+
     if (sw.isApiCall(requestUrl.host)) {
-      return event.respondWith(constructResponse());
+      console.error('caches', caches);
+
+      caches.open('v1').then(function(cache) {
+        cache.add(request);
+        cache.keys().then(function(keys) {
+          console.error('keys', keys)
+        });
+      });
+
+      // return event.respondWith(caches.match(request));
+      // return event.respondWith(constructResponse());
+
+      return event.respondWith(fetch(request));
     }
   },
-  onFetch(event) {
+  xonFetch(event) {
     const {request} = event;
     const requestUrl = new URL(request.url);
 
