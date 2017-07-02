@@ -20,3 +20,10 @@ Experiments with service-worker
 * Загрузка
 * Установка
 * Активация
+
+### Useful links
+
+* https://developers.google.com/web/ilt/pwa/tools-for-pwa-developers#offline
+* https://github.com/jakearchibald/trained-to-thrill
+* https://www.youtube.com/watch?v=4uQMl7mFB6g
+* https://github.com/GoogleChrome/samples/tree/gh-pages/service-worker

@@ -1,5 +1,10 @@
-console.error('hello from SW');
-console.error('self', self);
+const CACHE_VERSION = 'v1';
+const RESOURCES = [
+  '/',
+  'index.html',
+  '/js/app.js',
+  '/css/styles.css'
+];
 
 const sw = {
   initialize() {
@@ -7,25 +12,79 @@ const sw = {
     self.addEventListener('activate', this.onActivate);
     self.addEventListener('fetch', this.onFetch);
   },
-  onInstall(e) {
-    console.error('install', e);
-  },
-  onActivate(e) {
-    console.error('activate', e);
-  },
-  isApiCall() {
-    // TODO: implement this method
-    return true;
-  },
-  onFetch(e) {
-    console.error('fetch', e);
-    console.error('e.request', e.request);
-    console.error('e.request.url', e.request.url);
-    console.error('e.request.method', e.request.method);
-    console.error('e.request.headers', e.request.headers);
+  onInstall(event) {
+    console.error('install', event);
 
-    if (e.request.url === 'http://localhost:3000/api') {
-      return e.respondWith(constructResponse());
+    event.waitUntil(
+      caches.open(CACHE_VERSION).then(cache => {
+        return cache.addAll(RESOURCES);
+      })
+    );
+  },
+  onActivate(event) {
+    console.error('activate', event);
+
+    event.waitUntil(
+      caches.open(CACHE_VERSION)
+        .then(cache => cache.keys())
+        .then(keys => {
+          keys.forEach(key => console.log(key));
+          sw.deleteCache(keys);
+        })
+        .then(() => self.clients.claim())
+    );
+  },
+  deleteCache(names) {
+    return Promise.all(
+      names
+        .filter(cacheName => cacheName !== CACHE_VERSION)
+        .map(cacheName => caches.delete(cacheName))
+    );
+  },
+  isApiCall(host) {
+    return host === 'api.themoviedb.org';
+  },
+  isImgCall(host) {
+    return host === 'image.tmdb.org';
+  },
+  onFetch(event) {
+    const {host} = new URL(event.request.url);
+
+    if (sw.isApiCall(host)) {
+      event.respondWith(
+        caches.match(event.request)
+          .then(response => {
+            if (response) return response;
+
+            return fetch(event.request)
+              .then(() => caches.open(CACHE_VERSION).then(cache => cache.add(event.request)))
+              .catch(err => console.error('Fetch error', err));
+          })
+          .catch(err => {
+            console.error('Caches match error', err);
+          })
+      );
+    }
+    else if (sw.isImgCall(host)) {
+      console.error('isImgCall');
+
+      event.respondWith(
+        caches.match(event.request)
+          .then(response => {
+            if (response) return response;
+
+            return fetch(event.request)
+              .then(fetchResponse => caches.open(CACHE_VERSION).then(cache => {
+                cache.put(event.request, fetchResponse.clone());
+
+                return fetchResponse;
+              }))
+              .catch(err => console.error('Fetch error', err));
+          })
+          .catch(err => console.error('Caches match error', err)));
+    }
+    else {
+      event.respondWith(caches.match(event.request));
     }
   }
 };
@@ -33,9 +92,8 @@ const sw = {
 function constructResponse() {
   // TODO: replace foo:bar object by mocked data
   const data = JSON.stringify({foo: 'bar'});
-  const blob = new Blob([data]);
 
-  return new Response(blob)
+  return new Response(data)
 }
 
 sw.initialize();
