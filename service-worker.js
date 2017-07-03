@@ -3,7 +3,9 @@ const RESOURCES = [
   '/',
   'index.html',
   '/js/app.js',
-  '/css/styles.css'
+  '/css/styles.css',
+  '/utils/carousel/carousel.css',
+  '/utils/carousel/carousel.js'
 ];
 
 const sw = {

@@ -1,3 +1,30 @@
 body {
-    background: pink;
+    background: dimgrey;
+}
+
+.button {
+    cursor: pointer;
+}
+
+.carousel-container {
+    margin-bottom: 20px;
+}
+
+.connection-status {
+    position: absolute;
+    background: greenyellow;
+    width: 100px;
+    height: 40px;
+    line-height: 40px;
+    box-shadow: 3px 2px 3px rgba(0,0,0, 0.3);
+    text-align: center;
+    top: 0;
+    right: 0;
+    font-weight: bold;
+    color: black;
+}
+
+.connection-status.offline {
+    background: firebrick;
+    color: white;
 }

@@ -1,6 +1,6 @@
 const downloadBtnEl = document.getElementById('download-movies');
 const clearBtnEl = document.getElementById('clear-movies');
-const contentEl = document.getElementById('content');
+const contentEl = document.querySelector('.carousel-items-list');
 
 downloadBtnEl.addEventListener('click', event => {
   console.error('click', event);
@@ -30,13 +30,17 @@ clearBtnEl.addEventListener('click', () => {
 });
 
 function showImages (data) {
-  const ul = document.createElement('ul');
-
-  data.results.forEach(item => {
+  data.results.forEach((item, index) => {
     const div = document.createElement('div');
     const img = document.createElement('img');
 
-    img.src = `https://image.tmdb.org/t/p/w500${item.poster_path}`;
+    div.classList.add('carousel-item');
+
+    if (index === 0) {
+      div.classList.add('active');
+    }
+
+    img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
 
     div.appendChild(img);
 
