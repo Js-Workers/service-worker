@@ -11,60 +11,42 @@
 </head>
 <body>
   <script>
-    // Service workers require HTTPS (http://goo.gl/lq4gCo). If we're running on a real web server
-    // (as opposed to localhost on a custom port, which is whitelisted), then change the protocol to HTTPS.
-    if ((!location.port || location.port === '80') && location.protocol !== 'https:') {
-      location.protocol = 'https:';
-    }
-
-    console.error('navigator.serviceWorker', navigator.serviceWorker);
-
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js', {scope: '/'})
       .then(registration => {
-        // At this point, registration has taken place.
-        // The service worker will not handle requests until this page and any
-        // other instances of this page (in other tabs, etc.) have been
-        // closed/reloaded.
         console.error('registration', registration);
       })
       .catch(error => {
-        // Something went wrong during registration. The service-worker.js file
-        // might be unavailable or contain a syntax error.
-        // document.querySelector('#status').textContent = error;
         console.error('error', error);
       });
     }
   </script>
 
-
-
-  <div class="connection-status">online</div>
+  <div class="connection-status"></div>
 
   <div class="main-container">
+    <div class="button-container">
+      <div id="download-movies" class="button">Download movies</div>
+      <div id="clear-movies" class="button">Clear movies</div>
+    </div>
+
     <div class="carousel-container">
       <div class="carousel-items-list"></div>
       <div class="nav next">&gt;</div>
       <div class="nav prev">&lt;</div>
     </div>
 
-    <div id="download-movies" class="button">Download movies list!</div>
-    <div id="clear-movies" class="button">Clear movies list!</div>
+    <div>
+      <div class="js-rate-movie button like" data-rate="like">Like!</div>
+      <div class="js-rate-movie button dislike" data-rate="dislike">Dislike!</div>
+    </div>
+
+    <div>
+      <ul class="movies-list"></ul>
+    </div>
   </div>
 
   <script src="./js/app.js"></script>
   <script src="./utils/carousel/carousel.js"></script>
-
-  <script>
-    const statusEl = document.querySelector('.connection-status');
-
-    const toggleStatus = e => {
-      statusEl.classList.toggle('offline');
-      statusEl.textContent = e.type;
-    };
-
-    window.addEventListener('online', toggleStatus);
-    window.addEventListener('offline', toggleStatus);
-  </script>
 </body>
 </html>
