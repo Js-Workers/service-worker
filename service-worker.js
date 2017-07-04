@@ -10,9 +10,13 @@ const RESOURCES = [
 
 const sw = {
   initialize() {
-    self.addEventListener('install', this.onInstall);
-    self.addEventListener('activate', this.onActivate);
-    self.addEventListener('fetch', this.onFetch);
+    self.addEventListener('install', sw.onInstall);
+    self.addEventListener('activate', sw.onActivate);
+    self.addEventListener('fetch', sw.onFetch);
+    self.addEventListener('message', sw.oMessage);
+  },
+  oMessage(message) {
+    console.error('oMessage', message);
   },
   onInstall(event) {
     console.error('install', event);
@@ -30,7 +34,7 @@ const sw = {
       caches.open(CACHE_VERSION)
         .then(cache => cache.keys())
         .then(keys => {
-          keys.forEach(key => console.log(key));
+          // keys.forEach(key => console.log(key));
           sw.deleteCache(keys);
         })
         .then(() => self.clients.claim())
