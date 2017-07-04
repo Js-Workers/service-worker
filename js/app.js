@@ -14,6 +14,7 @@ const app = {
     this.elements.status = document.querySelector('.connection-status');
     this.elements.rateMovie = document.querySelectorAll('.js-rate-movie');
     this.elements.moviesList = document.querySelector('.movies-list');
+    this.elements.rateBtnsContainer = document.querySelector('.rate-buttons-container');
   },
   fireListeners() {
     const listeners = {
@@ -48,11 +49,12 @@ const app = {
       const id = parseInt(img.getAttribute('alt'));
       const movie = this.movies.find(item => item.id === id);
 
-      const li = document.createElement('li');
+      idbKeyval.set(id, Object.assign({}, movie, {rate})).then(() => {
+        const li = document.createElement('li');
 
-      li.textContent = `${rate}: ${movie.title}`;
-
-      this.elements.moviesList.appendChild(li);
+        li.textContent = `${rate}: ${movie.title}`;
+        this.elements.moviesList.appendChild(li);
+      });
     }
   },
   toggleStatus(e) {
@@ -77,6 +79,7 @@ const app = {
     }
 
     this.dataDownloaded = false;
+    this.elements.rateBtnsContainer.classList.add('hide');
   },
   showImages(data) {
     data.results.forEach((item, index) => {
@@ -116,6 +119,7 @@ const app = {
           this.dataDownloaded = true;
           this.movies = response.results;
           this.showImages(response);
+          this.elements.rateBtnsContainer.classList.remove('hide');
         })
       })
       .catch(err => console.error(err));
