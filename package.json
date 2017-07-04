@@ -19,7 +19,7 @@
   "homepage": "https://github.com/dosandk/service-worker#readme",
   "devDependencies": {},
   "dependencies": {
-    "body-parser": "^1.17.2",
-    "express": "^4.15.3"
+    "express": "^4.15.3",
+    "idb-keyval": "^2.3.0"
   }
 }

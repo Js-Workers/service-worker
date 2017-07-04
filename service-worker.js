@@ -5,7 +5,8 @@ const RESOURCES = [
   '/js/app.js',
   '/css/styles.css',
   '/utils/carousel/carousel.css',
-  '/utils/carousel/carousel.js'
+  '/utils/carousel/carousel.js',
+  '/node_modules/idb-keyval/idb-keyval.js'
 ];
 
 const sw = {
