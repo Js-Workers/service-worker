@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>SW Registration</title>
+</head>
+<body>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('registration.sw.js')
+      .then(registration => {
+        console.error('Registration success', registration);
+
+        registration.sync.register('image-fetch').then(() => {
+          console.log('Sync registered');
+        });
+      })
+      .catch(error => {
+        console.error('Registration error', error);
+      });
+    }
+  </script>
+</body>
+</html>

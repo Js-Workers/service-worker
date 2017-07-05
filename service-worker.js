@@ -14,14 +14,18 @@ const sw = {
     self.addEventListener('install', this.onInstall);
     self.addEventListener('activate', this.onActivate);
     self.addEventListener('fetch', this.onFetch);
+    self.addEventListener('sync', this.onSync);
+  },
+  onSync(event) {
+    if (event.tag === 'some-fetch') {
+      event.waitUntil(Promise.reject());
+    }
   },
   onInstall(event) {
     console.error('install', event);
 
     event.waitUntil(
-      caches.open(CACHE_VERSION).then(cache => {
-        return cache.addAll(RESOURCES);
-      })
+      caches.open(CACHE_VERSION).then(cache => cache.addAll(RESOURCES))
     );
   },
   onActivate(event) {
@@ -91,12 +95,5 @@ const sw = {
     }
   }
 };
-
-function constructResponse() {
-  // TODO: replace foo:bar object by mocked data
-  const data = JSON.stringify({foo: 'bar'});
-
-  return new Response(data)
-}
 
 sw.initialize();

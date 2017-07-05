@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Background sync</title>
+</head>
+<body>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./background-sync.sw.js')
+        .then(registration => navigator.serviceWorker.ready)
+        .then(registration => {
+          console.error('Registration success', registration);
+
+          registration.sync.register('some-fetch')
+            .then(() => {
+              console.log('Sync registered');
+            })
+            .catch(err => {
+              console.error('err', err);
+            });
+        })
+        .catch(error => {
+          console.error('Registration error', error);
+        });
+    }
+
+  </script>
+</body>
+</html>

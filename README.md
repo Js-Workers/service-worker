@@ -23,12 +23,19 @@ Experiments with service-worker
 
 ### Useful links
 
+* spec: https://www.w3.org/TR/service-workers-1
 * https://developers.google.com/web/ilt/pwa/tools-for-pwa-developers#offline
 * https://github.com/jakearchibald/trained-to-thrill
 * https://www.youtube.com/watch?v=4uQMl7mFB6g
 * https://github.com/GoogleChrome/samples/tree/gh-pages/service-worker
+* https://serviceworke.rs
 
 background sync
 * spec: https://wicg.github.io/BackgroundSync/spec/
 * https://www.twilio.com/blog/2017/02/send-messages-when-youre-back-online-with-service-workers-and-background-sync.html
 * https://ponyfoo.com/articles/backgroundsync
+
+push-notifications
+* spec: https://www.w3.org/TR/push-api/
+* spec: https://notifications.spec.whatwg.org/
+* https://peter-gribanov.github.io/serviceworker/
