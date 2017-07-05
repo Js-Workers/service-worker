@@ -1,5 +1,5 @@
 body {
-    background: dimgrey;
+    background: gainsboro;
 }
 
 .button-container {
@@ -48,4 +48,20 @@ body {
 
 .hide {
     display: none;
+}
+
+.nav.material-icons {
+    background: transparent;
+    border: none;
+    font-size: 48px;
+}
+.nav.material-icons.prev {
+    color: darkgreen;
+}
+.nav.material-icons.next {
+    color: darkred;
+}
+.nav.material-icons:hover {
+    background: transparent;
+    border: none;
 }

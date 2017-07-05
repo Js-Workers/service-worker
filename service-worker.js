@@ -6,7 +6,8 @@ const RESOURCES = [
   '/css/styles.css',
   '/utils/carousel/carousel.css',
   '/utils/carousel/carousel.js',
-  '/node_modules/idb-keyval/idb-keyval.js'
+  '/node_modules/idb-keyval/idb-keyval.js',
+  'https://fonts.gstatic.com/s/materialicons/v22/2fcrYFNaTjcS6g4U3t-Y5ZjZjT5FdEJ140U2DJYC3mY.woff2'
 ];
 
 const sw = {
