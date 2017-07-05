@@ -11,12 +11,13 @@
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('registration.sw.js')
+      .then(registration => navigator.serviceWorker.ready)
       .then(registration => {
         console.error('Registration success', registration);
 
-        registration.sync.register('image-fetch').then(() => {
-          console.log('Sync registered');
-        });
+        // TODO: this returns identical objects
+        console.error('navigator.serviceWorker.controller', navigator.serviceWorker.controller);
+        console.error('registration.active', registration.active);
       })
       .catch(error => {
         console.error('Registration error', error);

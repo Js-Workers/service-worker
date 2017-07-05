@@ -22,8 +22,10 @@ const sw = {
       event.waitUntil(Promise.reject());
     }
   },
-  oMessage(message) {
-    console.error('oMessage', message);
+  oMessage(event) {
+    console.error('oMessage', event);
+
+    event.source.postMessage("Hello! Your message was: " + event.data);
   },
   onInstall(event) {
     console.error('install', event);

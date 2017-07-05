@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Push notifications</title>
+</head>
+<body>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('communication-sw-page.sw')
+        .then(registration => navigator.serviceWorker.ready)
+        .then(registration => {
+          registration.active.postMessage({riba: 'riba'});
+        })
+        .catch(error => {
+          console.error('Registration error', error);
+        });
+
+      navigator.serviceWorker.addEventListener('message', event => {
+        console.error('echo from service worker!', event);
+      });
+    }
+
+  </script>
+</body>
+</html>

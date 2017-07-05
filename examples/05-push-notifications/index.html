@@ -12,6 +12,16 @@
     Notification.requestPermission(result => {
       if (result === 'granted') {
         new Notification("Hi there!");
+
+        const notification = new Notification('title', {
+          body: 'message',
+          icon: './smile.png'
+        });
+
+        notification.addEventListener('click', event => {
+          console.error('event', event);
+          console.error('notification was clicked!');
+        });
       } else {
         console.error('Denied notification permission')
       }

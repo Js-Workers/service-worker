@@ -25,11 +25,18 @@
           .catch(err => {
             console.error('err', err);
           });
+
+          registration.active.postMessage({riba: 'riba'});
       })
       .catch(error => {
         console.error('error', error);
       });
+
+      navigator.serviceWorker.addEventListener('message', event => {
+        console.error('echo from service worker!', event);
+      });
     }
+
   </script>
 
   <div class="connection-status"></div>
@@ -58,5 +65,8 @@
 
   <script src="./js/app.js"></script>
   <script src="./utils/carousel/carousel.js"></script>
+
 </body>
 </html>
+
+
