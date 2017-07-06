@@ -1,5 +1,3 @@
-// TODO: move this carousel to separate repo
-
 const carouselEl = document.querySelector('.carousel-container');
 const nav = document.querySelectorAll('.nav');
 

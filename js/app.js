@@ -1,28 +1,52 @@
 const app = {
   initialize() {
-    this.dataDownloaded = false;
-
+    this.requestNotificationPermission();
     this.cacheElements();
     this.fireListeners();
+    this.downloadMovies();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', {scope: '/'})
+        .then(registration => navigator.serviceWorker.ready)
+        .then(registration => {
+          console.error('registration', registration);
+
+          registration.sync.register('rate-movie')
+            .then(() => {
+              console.log('rate-movie: sync registered');
+            })
+            .catch(err => {
+              console.error('err', err);
+            });
+        })
+        .catch(error => {
+          console.error('error', error);
+        });
+    }
+  },
+  requestNotificationPermission() {
+    Notification.requestPermission(result => {
+      if (result !== 'granted') {
+        console.error('Denied notification permission')
+      }
+    });
   },
   cacheElements() {
     this.elements = {};
 
-    this.elements.downloadBtn = document.getElementById('download-movies');
-    this.elements.clearBtn = document.getElementById('clear-movies');
     this.elements.content = document.querySelector('.carousel-items-list');
     this.elements.status = document.querySelector('.connection-status');
     this.elements.rateMovie = document.querySelectorAll('.js-rate-movie');
     this.elements.moviesList = document.querySelector('.movies-list');
-    this.elements.rateBtnsContainer = document.querySelector('.rate-buttons-container');
+    // this.elements.rateBtnsContainer = document.querySelector('.rate-buttons-container');
   },
   fireListeners() {
     const listeners = {
       'window:online': 'toggleStatus',
       'window:offline': 'toggleStatus',
       'document:DOMContentLoaded': 'insertStatus',
-      'clearBtn:click': 'clearImages',
-      'downloadBtn:click': 'downloadMovies',
+      // 'clearBtn:click': 'clearImages',
+      // 'downloadBtn:click': 'downloadMovies',
       'rateMovie:click': 'rateMovie',
     };
 
@@ -39,7 +63,11 @@ const app = {
       } else {
         addListener(element);
       }
-    })
+    });
+
+    navigator.serviceWorker.addEventListener('message', event => {
+      console.error('echo from service worker!', event);
+    });
   },
   rateMovie(e) {
     const img = document.querySelector('.carousel-item.active img');
@@ -49,12 +77,7 @@ const app = {
       const id = parseInt(img.getAttribute('alt'));
       const movie = this.movies.find(item => item.id === id);
 
-      idbKeyval.set(id, Object.assign({}, movie, {rate})).then(() => {
-        const li = document.createElement('li');
-
-        li.textContent = `${rate}: ${movie.title}`;
-        this.elements.moviesList.appendChild(li);
-      });
+      navigator.serviceWorker.controller.postMessage(Object.assign({}, movie, {rate}));
     }
   },
   toggleStatus(e) {
@@ -71,16 +94,15 @@ const app = {
     status.classList.toggle(type);
     status.textContent = type;
   },
-  clearImages() {
-    const {content} = this.elements;
-
-    while (content.firstChild) {
-      content.removeChild(content.firstChild);
-    }
-
-    this.dataDownloaded = false;
-    this.elements.rateBtnsContainer.classList.add('hide');
-  },
+  // clearImages() {
+  //   const {content} = this.elements;
+  //
+  //   while (content.firstChild) {
+  //     content.removeChild(content.firstChild);
+  //   }
+  //
+  //   this.dataDownloaded = false;
+  // },
   showImages(data) {
     data.results.forEach((item, index) => {
       const div = document.createElement('div');
@@ -112,18 +134,17 @@ const app = {
       })
     };
 
-    if (!this.dataDownloaded) {
+    // if (!this.dataDownloaded) {
       fetch(externalApi, initObj)
       .then(data => {
         data.json().then(response => {
-          this.dataDownloaded = true;
+          // this.dataDownloaded = true;
           this.movies = response.results;
           this.showImages(response);
-          this.elements.rateBtnsContainer.classList.remove('hide');
         })
       })
       .catch(err => console.error(err));
-    }
+    // }
   }
 };
 

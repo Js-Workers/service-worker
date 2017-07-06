@@ -1,3 +1,9 @@
+self.importScripts('./node_modules/idb-keyval/idb-keyval.js');
+self.importScripts('./node_modules/idb/lib/idb.js');
+
+console.error('idbKeyval', idbKeyval);
+console.error('idb', idb);
+
 const CACHE_VERSION = 'v1';
 const RESOURCES = [
   '/',
@@ -7,6 +13,7 @@ const RESOURCES = [
   '/utils/carousel/carousel.css',
   '/utils/carousel/carousel.js',
   '/node_modules/idb-keyval/idb-keyval.js',
+  './node_modules/idb/lib/idb.js',
   'https://fonts.gstatic.com/s/materialicons/v22/2fcrYFNaTjcS6g4U3t-Y5ZjZjT5FdEJ140U2DJYC3mY.woff2'
 ];
 
@@ -24,9 +31,24 @@ const sw = {
     }
   },
   oMessage(event) {
-    console.error('oMessage', event);
+    const {data} = event;
+    const {id} = data;
+    const IMG_DOMAIN = 'https://image.tmdb.org/t/p/w300';
+    const MOVIE_DOMAIN = 'https://www.themoviedb.org/movie/';
 
-    event.source.postMessage("Hello! Your message was: " + event.data);
+    idbKeyval.set(id, data).then(() => {
+      idbKeyval.get(id).then(movie => {
+
+        console.error('movie', movie);
+
+        const {title, overview, poster_path, rate} = movie;
+          self.registration.showNotification(`${rate} ${title}`,{
+            body: overview,
+            icon: `${IMG_DOMAIN}${poster_path}`,
+            data: `${MOVIE_DOMAIN}${id}`
+          });
+      });
+    });
   },
   onInstall(event) {
     console.error('install', event);

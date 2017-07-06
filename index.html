@@ -10,53 +10,16 @@
   <link rel="stylesheet" type="text/css" href="./utils/carousel/carousel.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   <script src="./node_modules/idb-keyval/idb-keyval.js"></script>
+  <script src="./node_modules/idb/lib/idb.js"></script>
 </head>
 <body>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js', {scope: '/'})
-      .then(registration => navigator.serviceWorker.ready)
-      .then(registration => {
-        console.error('registration', registration);
-
-        registration.sync.register('some-fetch')
-          .then(() => {
-            console.log('Sync registered');
-          })
-          .catch(err => {
-            console.error('err', err);
-          });
-
-          registration.active.postMessage({riba: 'riba'});
-      })
-      .catch(error => {
-        console.error('error', error);
-      });
-
-      navigator.serviceWorker.addEventListener('message', event => {
-        console.error('echo from service worker!', event);
-      });
-    }
-
-  </script>
-
   <div class="connection-status"></div>
 
   <div class="main-container">
-    <div class="button-container">
-      <div id="download-movies" class="button">Download movies</div>
-      <div id="clear-movies" class="button">Clear movies</div>
-    </div>
-
     <div class="carousel-container">
       <div class="carousel-items-list"></div>
-      <i class="nav prev material-icons">thumb_up</i>
-      <i class="nav next material-icons">thumb_down</i>
-    </div>
-
-    <div class="rate-buttons-container hide">
-      <div class="js-rate-movie button like" data-rate="like">Like!</div>
-      <div class="js-rate-movie button dislike" data-rate="dislike">Dislike!</div>
+      <i class="js-rate-movie nav prev material-icons" data-rate="like">thumb_up</i>
+      <i class="js-rate-movie nav next material-icons" data-rate="dislike">thumb_down</i>
     </div>
 
     <div>
