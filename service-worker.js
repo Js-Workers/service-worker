@@ -40,13 +40,15 @@ const sw = {
       idbKeyval.get(id).then(movie => {
 
         console.error('movie', movie);
-
         const {title, overview, poster_path, rate} = movie;
+
+        if (rate === 'like') {
           self.registration.showNotification(`${rate} ${title}`,{
             body: overview,
             icon: `${IMG_DOMAIN}${poster_path}`,
             data: `${MOVIE_DOMAIN}${id}`
           });
+        }
       });
     });
   },

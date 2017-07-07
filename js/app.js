@@ -38,15 +38,12 @@ const app = {
     this.elements.status = document.querySelector('.connection-status');
     this.elements.rateMovie = document.querySelectorAll('.js-rate-movie');
     this.elements.moviesList = document.querySelector('.movies-list');
-    // this.elements.rateBtnsContainer = document.querySelector('.rate-buttons-container');
   },
   fireListeners() {
     const listeners = {
       'window:online': 'toggleStatus',
       'window:offline': 'toggleStatus',
       'document:DOMContentLoaded': 'insertStatus',
-      // 'clearBtn:click': 'clearImages',
-      // 'downloadBtn:click': 'downloadMovies',
       'rateMovie:click': 'rateMovie',
     };
 
@@ -125,7 +122,7 @@ const app = {
   downloadMovies() {
     const DOMAIN_URL = 'http://localhost:3000';
     const api = `${DOMAIN_URL}/api`;
-    const externalApi = 'https://api.themoviedb.org/3/movie/popular?api_key=59ff214635b431c1656379bf5aa01a8a&language=en-US&page=1';
+    const externalApi = 'https://api.themoviedb.org/3/movie/upcoming?api_key=59ff214635b431c1656379bf5aa01a8a&language=en-US&page=1';
 
     const initObj = {
       method: 'GET',
@@ -134,17 +131,14 @@ const app = {
       })
     };
 
-    // if (!this.dataDownloaded) {
-      fetch(externalApi, initObj)
+    fetch(externalApi, initObj)
       .then(data => {
         data.json().then(response => {
-          // this.dataDownloaded = true;
           this.movies = response.results;
           this.showImages(response);
         })
       })
       .catch(err => console.error(err));
-    // }
   }
 };
 
