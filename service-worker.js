@@ -1,8 +1,8 @@
 self.importScripts('./node_modules/idb-keyval/idb-keyval.js');
-self.importScripts('./node_modules/idb/lib/idb.js');
+// self.importScripts('./node_modules/idb/lib/idb.js');
 
 console.error('idbKeyval', idbKeyval);
-console.error('idb', idb);
+// console.error('idb', idb);
 
 const CACHE_VERSION = 'v1';
 const RESOURCES = [
@@ -13,12 +13,13 @@ const RESOURCES = [
   '/utils/carousel/carousel.css',
   '/utils/carousel/carousel.js',
   '/node_modules/idb-keyval/idb-keyval.js',
-  './node_modules/idb/lib/idb.js',
+  // './node_modules/idb/lib/idb.js',
   'https://fonts.gstatic.com/s/materialicons/v22/2fcrYFNaTjcS6g4U3t-Y5ZjZjT5FdEJ140U2DJYC3mY.woff2'
 ];
 
 const sw = {
   initialize() {
+    console.error('initialize');
     self.addEventListener('install', sw.onInstall);
     self.addEventListener('activate', sw.onActivate);
     self.addEventListener('fetch', sw.onFetch);
@@ -48,6 +49,9 @@ const sw = {
             icon: `${IMG_DOMAIN}${poster_path}`,
             data: `${MOVIE_DOMAIN}${id}`
           });
+
+          // sendResponse
+          event.source.postMessage({movie});
         }
       });
     });

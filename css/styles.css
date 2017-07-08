@@ -23,10 +23,6 @@ body {
     line-height: 31px;
 }
 
-.carousel-container {
-    margin-bottom: 20px;
-}
-
 .connection-status {
     position: absolute;
     width: 100px;
@@ -65,3 +61,36 @@ body {
     background: transparent;
     border: none;
 }
+
+.movies-list {
+    width: 100%;
+    display: table;
+    margin: 0 auto;
+}
+
+.movie-item {
+    width: 400px;
+    height: 100px;
+    display: table;
+    margin: 0 auto;
+}
+.movie-img {
+    width: 25%;
+    height: 100px;
+    display: table-cell;
+    padding: 10px;
+}
+.movie-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.title {
+    width: 70%;
+    display: table-cell;
+    padding: 0 10px 0;
+    vertical-align: top;
+    font-size: 12px;
+}
+
+
