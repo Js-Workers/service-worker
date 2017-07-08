@@ -49,13 +49,14 @@ const app = {
     this.elements.status = document.querySelector('.connection-status');
     this.elements.rateMovie = document.querySelectorAll('.js-rate-movie');
     this.elements.moviesList = document.querySelector('.movies-list');
+    this.elements.removeMovie = document.querySelectorAll('.remove-movie');
   },
   fireListeners() {
     const listeners = {
       'window:online': 'toggleStatus',
       'window:offline': 'toggleStatus',
       'document:DOMContentLoaded': 'insertStatus',
-      'rateMovie:click': 'rateMovie',
+      'rateMovie:click': 'rateMovie'
     };
 
     Object.keys(listeners).forEach(key => {
@@ -74,8 +75,25 @@ const app = {
     });
 
     navigator.serviceWorker.addEventListener('message', event => {
-      this.insertMovie(event.data.movie);
+      const {type, body} = event.data;
+
+      if (type === 'rate') {
+        this.insertMovie(body);
+      }
+
+      if (type === 'remove') {
+        this.removeMovieFromList(body.id);
+      }
     });
+  },
+  removeMovie (movie) {
+    navigator.serviceWorker.controller.postMessage({type: 'remove', body: movie});
+  },
+  removeMovieFromList (id) {
+    const movieId = `movie-${id}`;
+    const movieItem = document.getElementById(movieId);
+
+    this.elements.moviesList.removeChild(movieItem);
   },
   rateMovie(e) {
     const img = document.querySelector('.carousel-item.active img');
@@ -86,22 +104,24 @@ const app = {
       const movie = this.movies.find(item => item.id === id);
 
       if (rate === 'like') {
-        navigator.serviceWorker.controller.postMessage(Object.assign({}, movie, {rate}));
+        navigator.serviceWorker.controller.postMessage({type: 'rate', body: Object.assign({}, movie, {rate})});
       } else {
         this.removeImg(id);
       }
     }
   },
   insertMovie(movie) {
-    const {title, overview, poster_path} = movie;
+    const {id, title, overview, poster_path} = movie;
     const selectors = {
       item: 'movie-item',
       img: 'movie-img',
-      title: 'title'
+      title: 'title',
+      remove: 'remove-movie'
     };
 
     const movieItem = document.createElement('figure');
     movieItem.classList.add(selectors.item);
+    movieItem.id = `movie-${id}`;
 
     const movieImgItem = document.createElement('div');
     movieImgItem.classList.add(selectors.img);
@@ -115,9 +135,17 @@ const app = {
     const h3 = document.createElement('h3');
     h3.textContent = title;
 
+    const span = document.createElement('span');
+    span.classList.add('remove-movie');
+    span.textContent = '\u2716';
+    span.addEventListener('click', () => {
+      this.removeMovie(movie);
+    });
+
     const p = document.createElement('p');
     p.textContent = overview;
 
+    h3.appendChild(span);
     figcaption.appendChild(h3);
     figcaption.appendChild(p);
 

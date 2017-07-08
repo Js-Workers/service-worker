@@ -33,28 +33,36 @@ const sw = {
   },
   oMessage(event) {
     const {data} = event;
-    const {id} = data;
+    const {type, body} = data;
+    const {id} = body;
     const IMG_DOMAIN = 'https://image.tmdb.org/t/p/w300';
     const MOVIE_DOMAIN = 'https://www.themoviedb.org/movie/';
 
-    idbKeyval.set(id, data).then(() => {
-      idbKeyval.get(id).then(movie => {
+    if (type === 'rate') {
+      idbKeyval.set(id, body).then(() => {
+        idbKeyval.get(id).then(movie => {
 
-        console.error('movie', movie);
-        const {title, overview, poster_path, rate} = movie;
+          console.error('movie', movie);
+          const {title, overview, poster_path, rate} = movie;
 
-        if (rate === 'like') {
-          self.registration.showNotification(`${rate} ${title}`,{
-            body: overview,
-            icon: `${IMG_DOMAIN}${poster_path}`,
-            data: `${MOVIE_DOMAIN}${id}`
-          });
+          if (rate === 'like') {
+            self.registration.showNotification(`${rate} ${title}`,{
+              body: overview,
+              icon: `${IMG_DOMAIN}${poster_path}`,
+              data: `${MOVIE_DOMAIN}${id}`
+            });
 
-          // sendResponse
-          event.source.postMessage({movie});
-        }
+            event.source.postMessage({type: 'rate', body: movie});
+          }
+        });
       });
-    });
+    }
+
+    if (type === 'remove') {
+      idbKeyval.delete(id);
+      event.source.postMessage({type: 'remove', body});
+    }
+
   },
   onInstall(event) {
     console.error('install', event);

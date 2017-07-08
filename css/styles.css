@@ -93,4 +93,15 @@ body {
     font-size: 12px;
 }
 
-
+.remove-movie {
+    background: darkred;
+    border-radius: 50%;
+    width: 15px;
+    height: 15px;
+    float: right;
+    text-align: center;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 10px;
+}
