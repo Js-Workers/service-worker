@@ -52,16 +52,16 @@ const app = {
     this.elements.removeMovie = document.querySelectorAll('.remove-movie');
   },
   fireListeners() {
-    const listeners = {
+    this.listeners = {
       'window:online': 'toggleStatus',
       'window:offline': 'toggleStatus',
       'document:DOMContentLoaded': 'insertStatus',
       'rateMovie:click': 'rateMovie'
     };
 
-    Object.keys(listeners).forEach(key => {
+    Object.keys(this.listeners).forEach(key => {
       const [elementName, eventType] = key.split(':');
-      const value = listeners[key];
+      const value = this.listeners[key];
       const element = this.elements[elementName] || window[elementName];
       const addListener = item => item.addEventListener(eventType, this[value].bind(this));
 
@@ -100,7 +100,7 @@ const app = {
     const {rate} = e.target.dataset;
 
     if (img) {
-      const id = parseInt(img.getAttribute('alt'));
+      const id = parseInt(img.getAttribute('id'));
       const movie = this.movies.find(item => item.id === id);
 
       if (rate === 'like') {
@@ -110,53 +110,32 @@ const app = {
       }
     }
   },
+  prepareTemplate (template, obj = {}) {
+    const regexp = /<%=(.*?)%>/g;
+    const replacer = (match, p1) => obj[p1.trim()] || p1.trim();
+
+    return template.replace(regexp, replacer);
+  },
   insertMovie(movie) {
     const {id, title, overview, poster_path} = movie;
-    const selectors = {
-      item: 'movie-item',
-      img: 'movie-img',
-      title: 'title',
-      remove: 'remove-movie'
-    };
-
-    const movieItem = document.createElement('figure');
-    movieItem.classList.add(selectors.item);
-    movieItem.id = `movie-${id}`;
-
-    const movieImgItem = document.createElement('div');
-    movieImgItem.classList.add(selectors.img);
-
-    const img = document.createElement('img');
-    img.src = `https://image.tmdb.org/t/p/w150${poster_path}`;
-
-    const figcaption = document.createElement('figcaption');
-    figcaption.classList.add(selectors.title);
-
-    const h3 = document.createElement('h3');
-    h3.textContent = title;
-
-    const span = document.createElement('span');
-    span.classList.add('remove-movie');
-    span.textContent = '\u2716';
-    span.addEventListener('click', () => {
-      this.removeMovie(movie);
+    const template = document.getElementById('move-item').innerHTML;
+    const preparedTemplate = this.prepareTemplate(template, {
+      id, title, overview, poster_path
     });
 
-    const p = document.createElement('p');
-    p.textContent = overview;
-
-    h3.appendChild(span);
-    figcaption.appendChild(h3);
-    figcaption.appendChild(p);
-
-    movieImgItem.appendChild(img);
-
-    movieItem.appendChild(movieImgItem);
-    movieItem.appendChild(figcaption);
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = preparedTemplate;
+    wrapper.id = `movie-${id}`;
 
     const [firstChild] = this.elements.moviesList.children;
 
-    this.elements.moviesList.insertBefore(movieItem, firstChild);
+    this.elements.moviesList.insertBefore(wrapper, firstChild);
+
+    const removeBtn = wrapper.querySelector('.remove-movie');
+
+    removeBtn.addEventListener('click', () => {
+      this.removeMovie(movie);
+    });
   },
   toggleStatus(e) {
     const {status} = this.elements;
@@ -189,7 +168,6 @@ const app = {
 
       img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
       img.id = item.id;
-      img.alt = item.id;
 
       div.appendChild(img);
 

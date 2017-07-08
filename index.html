@@ -28,6 +28,17 @@
   <script src="./js/app.js"></script>
   <script src="./utils/carousel/carousel.js"></script>
 
+  <script id="move-item" type="template">
+    <figure class="movie-item">
+      <div class="movie-img">
+        <img src="https://image.tmdb.org/t/p/w150<%= poster_path %>">
+      </div>
+      <figcaption class="title">
+        <h3><%= title %><span class="remove-movie">✖</span></h3>
+        <p><%= overview %></p>
+      </figcaption>
+    </figure>
+  </script>
 </body>
 </html>
 
