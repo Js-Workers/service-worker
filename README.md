@@ -39,3 +39,6 @@ push-notifications
 * spec: https://www.w3.org/TR/push-api/
 * spec: https://notifications.spec.whatwg.org/
 * https://peter-gribanov.github.io/serviceworker/
+
+postMessages and MessageChannel
+* https://ponyfoo.com/articles/serviceworker-messagechannel-postmessage

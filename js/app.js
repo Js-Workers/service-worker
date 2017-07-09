@@ -8,33 +8,33 @@ const app = {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js', {scope: '/'})
         .then(registration => navigator.serviceWorker.ready)
-        .then(registration => {
-          console.error('registration', registration);
+        .then(sw => {
+          console.error('Registered SW', sw);
 
-          registration.sync.register('rate-movie')
-            .then(() => {
-              console.log('rate-movie: sync registered');
-            })
-            .catch(err => {
-              console.error('err', err);
-            });
+          this.sw = sw;
+          this.getLikedMovies();
+
         })
         .catch(error => {
           console.error('error', error);
         });
     }
-
-    this.getLikedMoviesFromDB();
+    // this.getLikedMoviesFromDB();
   },
-  getLikedMoviesFromDB () {
-    idbKeyval.keys().then(keys => {
-      keys.forEach(id => {
-        idbKeyval.get(id).then(movie => {
-          this.insertMovie(movie);
-        });
-      })
-    });
+  getLikedMovies() {
+    this.sw.sync.register('get-movies')
+      .then(() => console.error('Registered "get-movie" sync'))
+      .catch(err => console.error('Error: can\'t register "get-movie"', err));
   },
+  // getLikedMoviesFromDB () {
+  //   idbKeyval.keys().then(keys => {
+  //     keys.forEach(id => {
+  //       idbKeyval.get(id).then(movie => {
+  //         this.insertMovie(movie);
+  //       });
+  //     })
+  //   });
+  // },
   requestNotificationPermission() {
     Notification.requestPermission(result => {
       if (result !== 'granted') {
@@ -177,7 +177,7 @@ const app = {
   downloadMovies() {
     const DOMAIN_URL = 'http://localhost:3000';
     const api = `${DOMAIN_URL}/api`;
-    const externalApi = 'https://api.themoviedb.org/3/movie/upcoming?api_key=59ff214635b431c1656379bf5aa01a8a&language=en-US&page=1';
+    const externalApi = `https://api.themoviedb.org/3/movie/upcoming?api_key=${config.TMDB_API_KEY}&language=en-US&page=1`;
 
     const initObj = {
       method: 'GET',

@@ -1,68 +1,142 @@
 self.importScripts('./node_modules/idb-keyval/idb-keyval.js');
-// self.importScripts('./node_modules/idb/lib/idb.js');
-
-console.error('idbKeyval', idbKeyval);
-// console.error('idb', idb);
+self.importScripts('./js/endpoints.js');
+self.importScripts('./js/config.js');
 
 const CACHE_VERSION = 'v1';
 const RESOURCES = [
   '/',
   'index.html',
   '/js/app.js',
+  '/js/config.js',
+  '/js/endpoints.js',
   '/css/styles.css',
   '/utils/carousel/carousel.css',
   '/utils/carousel/carousel.js',
   '/node_modules/idb-keyval/idb-keyval.js',
-  // './node_modules/idb/lib/idb.js',
   'https://fonts.gstatic.com/s/materialicons/v22/2fcrYFNaTjcS6g4U3t-Y5ZjZjT5FdEJ140U2DJYC3mY.woff2'
 ];
 
+const logger = {
+  error(...args) {
+    console.error(...args);
+  },
+  success(...args) {
+    console.error(`%c${args.join(' ')}`, 'color: green');
+  }
+};
+
 const sw = {
   initialize() {
-    console.error('initialize');
+    logger.success('initialize');
+
     self.addEventListener('install', sw.onInstall);
     self.addEventListener('activate', sw.onActivate);
     self.addEventListener('fetch', sw.onFetch);
     self.addEventListener('sync', sw.onSync);
     self.addEventListener('message', sw.oMessage);
+    self.addEventListener('push', sw.onPush);
+  },
+  onPush() {
+    logger.success('onPush');
   },
   onSync(event) {
-    if (event.tag === 'some-fetch') {
-      event.waitUntil(Promise.reject());
+    logger.success('onSync');
+
+    if (event.tag === 'get-movies') {
+      event.waitUntil(sw.getMovies());
     }
+  },
+  getMovies() {
+    const queryString = `apiKey=${config.MLAB_API_KEY}`;
+    const initObj = {
+      method: 'GET',
+      headers: new Headers({'Content-Type': 'application/json'})
+    };
+
+    fetch(endpoints.getMovies(queryString), initObj)
+      .then(response => response.json())
+      .then(movies => {
+        console.log('movies', movies);
+
+        return movies;
+      })
+      // TODO: rethink this in context of background sync
+      // .catch(error => {
+      //   logger.error('Error: can\'t get movies from remote DB.', error);
+      //
+      //   return sw.getAllMoviesFromIndexedDB();
+      // });
+  },
+  getAllMoviesFromIndexedDB() {
+    return idbKeyval.keys().then(keys => {
+      Promise.all(keys.map(id => idbKeyval.get(id).then(movie => movie)))
+        .then(movies => {
+          // console.error('All movies from IndexedDB', movies);
+          return movies;
+        })
+        .catch(err => logger.error('Error: can\'t get movies from indexedDB.', err))
+    });
   },
   oMessage(event) {
     const {data} = event;
     const {type, body} = data;
     const {id} = body;
-    const IMG_DOMAIN = 'https://image.tmdb.org/t/p/w300';
-    const MOVIE_DOMAIN = 'https://www.themoviedb.org/movie/';
 
-    if (type === 'rate') {
-      idbKeyval.set(id, body).then(() => {
-        idbKeyval.get(id).then(movie => {
+      if (type === 'rate') {
+        const queryString = `apiKey=${config.MLAB_API_KEY}`;
+        const initObj = {
+          method: 'POST',
+          headers: new Headers({'Content-Type': 'application/json'}),
+          body: JSON.stringify(body)
+        };
 
-          console.error('movie', movie);
-          const {title, overview, poster_path, rate} = movie;
+        fetch(endpoints.addMovie(queryString), initObj)
+          .then(response => response.json())
+          .then(movie => {
+            logger.success('Movie stored to remote DB');
+            sw.saveMovieToLocalDB(movie, event);
+          })
+          .catch(error => {
+            logger.error('Error: can\'t save movie to remote DB.', error);
 
-          if (rate === 'like') {
-            self.registration.showNotification(`${rate} ${title}`,{
-              body: overview,
-              icon: `${IMG_DOMAIN}${poster_path}`,
-              data: `${MOVIE_DOMAIN}${id}`
-            });
-
-            event.source.postMessage({type: 'rate', body: movie});
-          }
-        });
-      });
-    }
+            sw.saveMovieToLocalDB(body, event);
+          });
+      }
 
     if (type === 'remove') {
+      console.error('body', body);
       idbKeyval.delete(id);
       event.source.postMessage({type: 'remove', body});
     }
+  },
+  saveMovieToLocalDB(movie, event) {
+    const {id} = movie;
 
+    return idbKeyval.set(id, movie)
+      .then(() => {
+        logger.success('Movie stored to IndexedDB');
+
+        idbKeyval.get(id)
+          .then(movie => {
+            sw.showNotification(movie);
+            event.source.postMessage({type: 'rate', body: movie});
+          })
+          .catch(err => logger.error('Error: can\'t get movie from indexedDB.', err));
+      })
+      .catch(err => logger.error('Error: can\'t save movie to indexedDB.', err));
+  },
+  showNotification(movie) {
+    const {id, title, overview, poster_path, rate} = movie;
+
+    if (Notification.permission === 'granted') {
+      self.registration.showNotification(`${rate} ${title}`, {
+        body: overview,
+        icon: `${config.IMG_DOMAIN}${poster_path}`,
+        data: `${config.MOVIE_DOMAIN}${id}`
+      });
+    } else {
+      logger.error('Error: notification permissions denied. Was rated movie:', title);
+    }
   },
   onInstall(event) {
     console.error('install', event);
@@ -116,8 +190,6 @@ const sw = {
       );
     }
     else if (sw.isImgCall(host)) {
-      console.error('isImgCall');
-
       event.respondWith(
         caches.match(event.request)
           .then(response => {
