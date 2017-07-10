@@ -6,9 +6,10 @@
         content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Document</title>
+
   <link rel="stylesheet" type="text/css" href="./css/styles.css">
   <link rel="stylesheet" type="text/css" href="./utils/carousel/carousel.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
   <script src="./js/config.js"></script>
   <script src="./node_modules/idb-keyval/idb-keyval.js"></script>
 </head>
@@ -18,8 +19,12 @@
   <div class="main-container">
     <div class="carousel-container">
       <div class="carousel-items-list"></div>
-      <i class="js-rate-movie nav prev material-icons" data-rate="like">thumb_up</i>
-      <i class="js-rate-movie nav next material-icons" data-rate="dislike">thumb_down</i>
+      <div class="js-rate-movie nav prev material-icons">
+        <img src="./img/dislike.svg" alt="dislike" data-rate="dislike">
+      </div>
+      <div class="js-rate-movie nav next material-icons">
+        <img src="./img/like.svg" alt="like" data-rate="like">
+      </div>
     </div>
   </div>
 

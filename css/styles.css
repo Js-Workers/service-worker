@@ -49,7 +49,10 @@ body {
 .nav.material-icons {
     background: transparent;
     border: none;
-    font-size: 48px;
+}
+.nav img {
+    width: 42px;
+    height: 42px;
 }
 .nav.material-icons.prev {
     color: darkgreen;

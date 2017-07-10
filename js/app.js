@@ -8,45 +8,24 @@ const app = {
       navigator.serviceWorker.register('service-worker.js', {scope: '/'})
         .then(registration => navigator.serviceWorker.ready)
         .then(sw => {
-          console.error('Registered SW', sw);
-
           this.sw = sw;
           this.sw.active.postMessage({type: 'riba', body: {}});
           this.getLikedMovies();
           this.getupcomingMovies();
-
         })
-        .catch(error => {
-          console.error('error', error);
-        });
+        .catch(error => console.error('error', error));
     }
-    // this.getLikedMoviesFromDB();
   },
   getLikedMovies() {
     this.sw.sync.register('get-movies')
-      .then(() => console.error('Registered "get-movie" sync'))
+      .then(() => console.log('Registered "get-movie" sync'))
       .catch(err => console.error('Error: can\'t register "get-movie"', err));
   },
   getupcomingMovies() {
     this.sw.sync.register('get-upcoming-movies')
-      .then(() => console.error('Registered "get-upcoming-movies" sync'))
+      .then(() => console.log('Registered "get-upcoming-movies" sync'))
       .catch(err => console.error('Error: can\'t register "get-movie"', err));
   },
-  // sendMessageToSw (msg) {
-  //   return new Promise((resolve, reject) => {
-  //     const channel = new MessageChannel();
-  //
-  //     channel.port1.onmessage = event => {
-  //       const {data} = event;
-  //
-  //       console.error('message from SW!');
-  //
-  //       data.error ? reject(data.error) : resolve(data);
-  //     };
-  //
-  //     this.sw.active.postMessage(msg, [channel.port2])
-  //   })
-  // },
   requestNotificationPermission() {
     Notification.requestPermission(result => {
       if (result !== 'granted') {
@@ -89,16 +68,15 @@ const app = {
     navigator.serviceWorker.addEventListener('message', event => {
       const {type, body} = event.data;
 
-      if (type === 'rate') {
-        this.insertMovie(body);
-      }
-
-      if (type === 'remove') {
-        this.removeMovieFromList(body.id);
-      }
-
-      if (type === 'loaded-upcoming-movies') {
-        this.showImages(event.data.movies);
+      switch (type) {
+      case 'rate':
+        return this.insertMovie(body);
+      case 'remove':
+        return this.removeMovieFromList(body.id);
+      case 'loaded-upcoming-movies':
+        return this.showImages(event.data.movies);
+      case 'riba':
+        event.data.movies.forEach(movie => this.insertMovie(movie))
       }
     });
   },
@@ -184,7 +162,7 @@ const app = {
         div.classList.add('active');
       }
 
-      img.src = `https://image.tmdb.org/t/p/w300${item.poster_path}`;
+      img.src = `${config.IMG_POSTER_DOMAIN}${item.poster_path}`;
       img.id = item.id;
 
       div.appendChild(img);
