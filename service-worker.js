@@ -35,6 +35,11 @@ const sw = {
     self.addEventListener('sync', sw.onSync);
     self.addEventListener('message', sw.oMessage);
     self.addEventListener('push', sw.onPush);
+    self.addEventListener('notificationclick', sw.onNotificationclick);
+  },
+  onNotificationclick() {
+    // TODO: check this listener
+    logger.success('onNotificationclick');
   },
   onPush() {
     logger.success('onPush');
@@ -45,6 +50,90 @@ const sw = {
     if (event.tag === 'get-movies') {
       event.waitUntil(sw.getMovies());
     }
+
+    if (event.tag === 'get-upcoming-movies') {
+      event.waitUntil(sw.loadUpcomingMovies());
+    }
+  },
+  oMessage(event) {
+    console.error('oMessage', event);
+
+    const {data} = event;
+    const {id: clientID} = event.source;
+    const {type, body} = data;
+    const {id} = body;
+
+    sw.clientID = clientID;
+
+    console.error('event.clientID', clientID);
+
+    if (type === 'rate') {
+      const queryString = `apiKey=${config.MLAB_API_KEY}`;
+      const initObj = {
+        method: 'POST',
+        headers: new Headers({'Content-Type': 'application/json'}),
+        body: JSON.stringify(body)
+      };
+
+      fetch(endpoints.addMovie(queryString), initObj)
+      .then(response => response.json())
+      .then(movie => {
+        logger.success('Movie stored to remote DB');
+        sw.saveMovieToLocalDB(movie, event);
+      })
+      .catch(error => {
+        logger.error('Error: can\'t save movie to remote DB.', error);
+
+        sw.saveMovieToLocalDB(body, event);
+      });
+    }
+
+    if (type === 'remove') {
+      console.error('body', body);
+      idbKeyval.delete(id);
+      event.source.postMessage({type: 'remove', body});
+    }
+  },
+  // sendMessageToClient (client, msg) {
+  //   client.postMessage("SW Says: '"+msg+"'");
+
+    // return new Promise((resolve, reject) => {
+    //   const channel = new MessageChannel();
+    //
+    //   channel.port1.onmessage = ({data}) => {
+    //     data.error ? reject(event.data.error) : resolve(data);
+    //   };
+    //
+    //   client.postMessage("SW Says: '"+msg+"'", [channel.port2]);
+    // });
+  // },
+  getCurrentClient(id) {
+    return clients.get(id).then(client => client);
+  },
+  sendMessageToAllClients (msg) {
+    clients.matchAll().then(clients => {
+      clients.forEach(client => client.postMessage({msg}))
+    });
+  },
+  loadUpcomingMovies() {
+    const externalApi = `https://api.themoviedb.org/3/movie/upcoming?api_key=${config.TMDB_API_KEY}&language=en-US&page=1`;
+    const initObj = {
+      method: 'GET',
+      headers: new Headers({'Content-Type': 'application/json'})
+    };
+
+    fetch(externalApi, initObj)
+      .then(data => {
+        data.json().then(response => {
+          console.error('response.results', response.results);
+
+          sw.getCurrentClient(sw.clientID).then(client => {
+            client.postMessage({type: 'loaded-upcoming-movies', movies: response.results});
+          });
+        })
+      })
+      // TODO: check this
+      // .catch(err => console.error(err));
   },
   getMovies() {
     const queryString = `apiKey=${config.MLAB_API_KEY}`;
@@ -76,38 +165,6 @@ const sw = {
         })
         .catch(err => logger.error('Error: can\'t get movies from indexedDB.', err))
     });
-  },
-  oMessage(event) {
-    const {data} = event;
-    const {type, body} = data;
-    const {id} = body;
-
-      if (type === 'rate') {
-        const queryString = `apiKey=${config.MLAB_API_KEY}`;
-        const initObj = {
-          method: 'POST',
-          headers: new Headers({'Content-Type': 'application/json'}),
-          body: JSON.stringify(body)
-        };
-
-        fetch(endpoints.addMovie(queryString), initObj)
-          .then(response => response.json())
-          .then(movie => {
-            logger.success('Movie stored to remote DB');
-            sw.saveMovieToLocalDB(movie, event);
-          })
-          .catch(error => {
-            logger.error('Error: can\'t save movie to remote DB.', error);
-
-            sw.saveMovieToLocalDB(body, event);
-          });
-      }
-
-    if (type === 'remove') {
-      console.error('body', body);
-      idbKeyval.delete(id);
-      event.source.postMessage({type: 'remove', body});
-    }
   },
   saveMovieToLocalDB(movie, event) {
     const {id} = movie;

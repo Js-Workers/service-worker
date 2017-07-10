@@ -3,7 +3,6 @@ const app = {
     this.requestNotificationPermission();
     this.cacheElements();
     this.fireListeners();
-    this.downloadMovies();
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js', {scope: '/'})
@@ -12,7 +11,9 @@ const app = {
           console.error('Registered SW', sw);
 
           this.sw = sw;
+          this.sw.active.postMessage({type: 'riba', body: {}});
           this.getLikedMovies();
+          this.getupcomingMovies();
 
         })
         .catch(error => {
@@ -26,14 +27,25 @@ const app = {
       .then(() => console.error('Registered "get-movie" sync'))
       .catch(err => console.error('Error: can\'t register "get-movie"', err));
   },
-  // getLikedMoviesFromDB () {
-  //   idbKeyval.keys().then(keys => {
-  //     keys.forEach(id => {
-  //       idbKeyval.get(id).then(movie => {
-  //         this.insertMovie(movie);
-  //       });
-  //     })
-  //   });
+  getupcomingMovies() {
+    this.sw.sync.register('get-upcoming-movies')
+      .then(() => console.error('Registered "get-upcoming-movies" sync'))
+      .catch(err => console.error('Error: can\'t register "get-movie"', err));
+  },
+  // sendMessageToSw (msg) {
+  //   return new Promise((resolve, reject) => {
+  //     const channel = new MessageChannel();
+  //
+  //     channel.port1.onmessage = event => {
+  //       const {data} = event;
+  //
+  //       console.error('message from SW!');
+  //
+  //       data.error ? reject(data.error) : resolve(data);
+  //     };
+  //
+  //     this.sw.active.postMessage(msg, [channel.port2])
+  //   })
   // },
   requestNotificationPermission() {
     Notification.requestPermission(result => {
@@ -83,6 +95,10 @@ const app = {
 
       if (type === 'remove') {
         this.removeMovieFromList(body.id);
+      }
+
+      if (type === 'loaded-upcoming-movies') {
+        this.showImages(event.data.movies);
       }
     });
   },
@@ -155,8 +171,10 @@ const app = {
     const img = document.getElementById(id);
     img.parentNode.removeChild(img);
   },
-  showImages(data) {
-    data.results.forEach((item, index) => {
+  showImages(movies) {
+    this.movies = movies;
+
+    movies.forEach((item, index) => {
       const div = document.createElement('div');
       const img = document.createElement('img');
 
@@ -173,27 +191,6 @@ const app = {
 
       this.elements.content.appendChild(div);
     });
-  },
-  downloadMovies() {
-    const DOMAIN_URL = 'http://localhost:3000';
-    const api = `${DOMAIN_URL}/api`;
-    const externalApi = `https://api.themoviedb.org/3/movie/upcoming?api_key=${config.TMDB_API_KEY}&language=en-US&page=1`;
-
-    const initObj = {
-      method: 'GET',
-      headers: new Headers({
-        'Content-Type': 'application/json'
-      })
-    };
-
-    fetch(externalApi, initObj)
-      .then(data => {
-        data.json().then(response => {
-          this.movies = response.results;
-          this.showImages(response);
-        })
-      })
-      .catch(err => console.error(err));
   }
 };
 

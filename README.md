@@ -34,6 +34,7 @@ background sync
 * spec: https://wicg.github.io/BackgroundSync/spec/
 * https://www.twilio.com/blog/2017/02/send-messages-when-youre-back-online-with-service-workers-and-background-sync.html
 * https://ponyfoo.com/articles/backgroundsync
+* https://stackoverflow.com/questions/41798009/pass-custom-data-to-service-worker-sync
 
 push-notifications
 * spec: https://www.w3.org/TR/push-api/
