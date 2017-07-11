@@ -36,7 +36,6 @@ const sw = {
     self.addEventListener('sync', sw.onSync);
     self.addEventListener('message', sw.oMessage);
     self.addEventListener('push', sw.onPush);
-    self.addEventListener('notificationclick', sw.onNotificationclick);
   },
   onInstall(event) {
     logger.success('install');
@@ -55,11 +54,18 @@ const sw = {
       .then(() => self.clients.claim())
     );
   },
+  deleteCache(names) {
+    return Promise.all(
+      names
+      .filter(cacheName => cacheName !== CACHE_VERSION)
+      .map(cacheName => caches.delete(cacheName))
+    );
+  },
   onFetch(event) {
     const {request} = event;
     const {host} = new URL(request.url);
 
-    console.error('onFetch', host);
+    logger.success('onFetch');
 
     switch (host) {
     case 'api.themoviedb.org':
@@ -96,17 +102,6 @@ const sw = {
       })
       .catch(err => console.error('Caches match error', err))
   },
-  deleteCache(names) {
-    return Promise.all(
-      names
-        .filter(cacheName => cacheName !== CACHE_VERSION)
-        .map(cacheName => caches.delete(cacheName))
-    );
-  },
-  onNotificationclick() {
-    // TODO: check this listener
-    logger.success('onNotificationclick');
-  },
   onPush() {
     logger.success('onPush');
   },
@@ -117,7 +112,7 @@ const sw = {
     case 'get-upcoming-movies':
       return event.waitUntil(sw.syncUpcomingMovies());
     case 'sync-rated-movies':
-      // return event.waitUntil(sw.syncUpcomingMovies());
+      return event.waitUntil(sw.syncRatedMovies());
     }
   },
   oMessage(event) {
@@ -174,8 +169,14 @@ const sw = {
       body: JSON.stringify(body)
     };
 
+    const sendMsgToAllClients = movies => sw.sendMessageToAllClients({type: 'rate', body: movies});
+
     // TODO: First - save movie to indexedDB
-    sw.saveMovieToIndexedDB(body);
+    sw.saveMovieToIndexedDB(body)
+    .then(movie => {
+      sw.showNotification(movie);
+      sendMsgToAllClients(movie);
+    });
 
     // TODO: Second - save movie to remote DB
     fetch(endpoints.addMovie(queryString), initObj)
@@ -196,11 +197,7 @@ const sw = {
       .then(() => {
         logger.success('Movie stored to IndexedDB');
 
-        sw.getMovieFromIndexedDB(id)
-          .then(movie => {
-            sw.showNotification(movie);
-            sw.sendMessageToClient(sw.clientID, {type: 'rate', body: movie});
-        })
+        return sw.getMovieFromIndexedDB(id);
       })
       .catch(err => console.error('Error: can\'t save movie to indexedDB.', err));
   },
@@ -214,11 +211,8 @@ const sw = {
   },
   sendMessageToAllClients (msg) {
     clients.matchAll().then(clients => {
-      clients.forEach(client => client.postMessage({msg}))
+      clients.forEach(client => client.postMessage(msg))
     });
-  },
-  makeRequestForUpcomingMovies() {
-    return fetch(sw.createRequestForUpcomingMovies());
   },
   createRequestForUpcomingMovies() {
     const externalApi = `${config.MOVIE_API}upcoming?api_key=${config.TMDB_API_KEY}&language=en-US&page=1`;
@@ -230,7 +224,9 @@ const sw = {
     return new Request(externalApi, initObj);
   },
   syncUpcomingMovies() {
-    sw.makeRequestForUpcomingMovies()
+    const request = sw.createRequestForUpcomingMovies();
+
+    fetch(request)
       .then(response => response.json())
       .then(response => {
         sw.sendMessageToClient(sw.clientID, {type: 'loaded-upcoming-movies', movies: response.results});
@@ -239,7 +235,7 @@ const sw = {
   getUpcomingMovies() {
     const request = sw.createRequestForUpcomingMovies();
 
-    return sw.makeRequestForUpcomingMovies(request)
+    return fetch(request)
       .then(() => caches.open(CACHE_VERSION)
       .then(cache => cache.add(request)))
       .then(() => caches.match(request))
@@ -248,7 +244,7 @@ const sw = {
         sw.sendMessageToClient(sw.clientID, {type: 'loaded-upcoming-movies', movies: response.results});
       })
       .catch(err => {
-        console.error(err);
+        console.error('Error: ', err);
 
         caches.match(request)
           .then(response => response.json())
@@ -262,37 +258,57 @@ const sw = {
     logger.error('Error: ', err);
     self.registration.sync.register(tag);
   },
-  makeRequestForRatedMovies() {
-    const queryString = `apiKey=${config.MLAB_API_KEY}`;
+  createRequestForRatedMovies() {
+    const externalApi = endpoints.getMovies(`apiKey=${config.MLAB_API_KEY}`);
     const initObj = {
       method: 'GET',
       headers: new Headers({'Content-Type': 'application/json'})
     };
 
-    return fetch(endpoints.getMovies(queryString), initObj)
+    return new Request(externalApi, initObj);
+  },
+  syncRatedMovies() {
+    const request = sw.createRequestForRatedMovies();
+
+    fetch(request)
+    .then(response => response.json())
+    .then(movies => sw.sendMessageToClient(sw.clientID, {type: 'loaded-rated-movies', movies}))
   },
   getRatedMovies() {
-    sw.makeRequestForRatedMovies()
+    const request = sw.createRequestForRatedMovies();
+    const sendMsgToClient = movies => sw.sendMessageToClient(sw.clientID, {type: 'loaded-rated-movies', movies});
+
+    return fetch(request)
+    .then(() => caches.open(CACHE_VERSION))
+    .then(cache => cache.add(request))
+    .then(() => caches.match(request))
     .then(response => response.json())
-    .then(movies => sw.sendMessageToClient(sw.clientID, {type: 'riba', movies}))
-    .catch(() => {
-      sw.getAllMoviesFromIndexedDB()
+    .then(movies => sendMsgToClient(movies))
+    .catch(err => {
+      console.error('Error: ', err);
+
+      caches.match(request)
+      .then(response => {
+        return response ? response.json() : [];
+      })
       .then(movies => {
-        if (!movies.length) {
-          return sw.registerSync('sync-rated-movies', {message: 'indexedDB is empty!'})
+        if (movies.length) {
+          return sendMsgToClient(movies);
         }
 
-        sw.sendMessageToClient(sw.clientID, {type: 'riba', movies})
+        sw.getAllMoviesFromIndexedDB()
+        .then(movies => {
+          if (!movies.length) {
+            return sw.registerSync('sync-rated-movies', err)
+          }
+
+          sendMsgToClient(movies);
+        })
+        .catch(err => console.error('Error: can\'t get movies from indexedDB'))
       })
-      .catch(err => sw.registerSync('sync-rated-movies', err))
+      .catch(err => console.error('Error: ', err));
     })
   },
-  // getAllRatedMoviesFromRemoteDB() {
-  //   sw.makeRequestForRatedMovies()
-  //   .then(response => response.json())
-  //   .then(movies => sw.sendMessageToClient(sw.clientID, {type: 'riba', movies}))
-    // .catch(err => sw.registerSync('sync-rated-movies', err))
-  // },
   getAllMoviesFromIndexedDB() {
     return idbKeyval.keys().then(keys =>
      Promise.all(keys.map(id => idbKeyval.get(id).then(movie => movie))));

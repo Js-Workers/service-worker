@@ -70,7 +70,7 @@ const app = {
         return this.removeMovieFromList(body.id);
       case 'loaded-upcoming-movies':
         return this.showImages(event.data.movies);
-      case 'riba':
+      case 'loaded-rated-movies':
         event.data.movies.forEach(movie => this.insertMovie(movie))
       }
     });
