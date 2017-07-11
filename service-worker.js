@@ -114,10 +114,10 @@ const sw = {
     logger.success('onSync');
 
     switch (event.tag) {
-    case 'get-movies':
-      return event.waitUntil(sw.getMoviesFromRemoteDB());
     case 'get-upcoming-movies':
-      return event.waitUntil(sw.loadUpcomingMovies());
+      return event.waitUntil(sw.syncUpcomingMovies());
+    case 'sync-rated-movies':
+      // return event.waitUntil(sw.syncUpcomingMovies());
     }
   },
   oMessage(event) {
@@ -135,6 +135,10 @@ const sw = {
       return sw.rateMovie(body, event);
     case 'remove':
       return sw.removeMovie(id, body);
+    case 'sync-upcoming-movies':
+      return sw.getUpcomingMovies();
+    case 'sync-rated-movies':
+      return sw.getRatedMovies();
     }
   },
   removeMovie(id, body) {
@@ -143,18 +147,22 @@ const sw = {
 
     console.error('body', body);
 
-    const {_id} = body;
+    // TODO: fix movie removing
+    const {_id: {}} = body;
     const {$oid: movieId} = _id;
 
+    // TODO: First - remove from indexedDB
     idbKeyval.delete(id);
     sw.sendMessageToClient(sw.clientID, {type: 'remove', body});
 
+    // TODO: Second - try remove from remote DB
     fetch(endpoints.removeMovie(movieId, queryString), initObj)
       .then(response => response.json())
       .then(data => {
         console.error('movie removed from remote DB', data);
       })
       .catch(error => {
+        // TODO: No Internet connection - register sync
         console.error('Error: can\'t remove movie to remote DB.', error);
       });
   },
@@ -166,17 +174,19 @@ const sw = {
       body: JSON.stringify(body)
     };
 
-    // TODO: maybe better save movie at first to indexedDB
+    // TODO: First - save movie to indexedDB
+    sw.saveMovieToIndexedDB(body);
+
+    // TODO: Second - save movie to remote DB
     fetch(endpoints.addMovie(queryString), initObj)
       .then(response => response.json())
       .then(movie => {
         logger.success('Movie stored to remote DB');
-        sw.saveMovieToIndexedDB(movie);
+        console.error('movie', movie);
       })
       .catch(error => {
+        // TODO: No Internet connection - register sync
         console.error('Error: can\'t save movie to remote DB.', error);
-
-        sw.saveMovieToIndexedDB(body);
       });
   },
   saveMovieToIndexedDB(movie) {
@@ -207,21 +217,52 @@ const sw = {
       clients.forEach(client => client.postMessage({msg}))
     });
   },
-  loadUpcomingMovies() {
+  makeRequestForUpcomingMovies() {
+    return fetch(sw.createRequestForUpcomingMovies());
+  },
+  createRequestForUpcomingMovies() {
     const externalApi = `${config.MOVIE_API}upcoming?api_key=${config.TMDB_API_KEY}&language=en-US&page=1`;
     const initObj = {
       method: 'GET',
       headers: new Headers({'Content-Type': 'application/json'})
     };
 
-    return fetch(externalApi, initObj)
-      .then(data => data.json())
+    return new Request(externalApi, initObj);
+  },
+  syncUpcomingMovies() {
+    sw.makeRequestForUpcomingMovies()
+      .then(response => response.json())
       .then(response => {
         sw.sendMessageToClient(sw.clientID, {type: 'loaded-upcoming-movies', movies: response.results});
       })
-      .catch(err => console.error(err));
   },
-  getMoviesFromRemoteDB() {
+  getUpcomingMovies() {
+    const request = sw.createRequestForUpcomingMovies();
+
+    return sw.makeRequestForUpcomingMovies(request)
+      .then(() => caches.open(CACHE_VERSION)
+      .then(cache => cache.add(request)))
+      .then(() => caches.match(request))
+      .then(response => response.json())
+      .then(response => {
+        sw.sendMessageToClient(sw.clientID, {type: 'loaded-upcoming-movies', movies: response.results});
+      })
+      .catch(err => {
+        console.error(err);
+
+        caches.match(request)
+          .then(response => response.json())
+          .then(response => {
+            sw.sendMessageToClient(sw.clientID, {type: 'loaded-upcoming-movies', movies: response.results});
+          })
+          .catch(err => sw.registerSync('get-upcoming-movies', err))
+      });
+  },
+  registerSync(tag, err) {
+    logger.error('Error: ', err);
+    self.registration.sync.register(tag);
+  },
+  makeRequestForRatedMovies() {
     const queryString = `apiKey=${config.MLAB_API_KEY}`;
     const initObj = {
       method: 'GET',
@@ -229,21 +270,32 @@ const sw = {
     };
 
     return fetch(endpoints.getMovies(queryString), initObj)
-      .then(response => response.json())
-      .then(movies => movies)
-      .then(movies => sw.sendMessageToClient(sw.clientID, {type: 'riba', movies}))
-      .catch(error => {
-        console.error('Error: can\'t get movie from remote DB', error);
-        sw.getAllMoviesFromIndexedDB();
-      });
   },
+  getRatedMovies() {
+    sw.makeRequestForRatedMovies()
+    .then(response => response.json())
+    .then(movies => sw.sendMessageToClient(sw.clientID, {type: 'riba', movies}))
+    .catch(() => {
+      sw.getAllMoviesFromIndexedDB()
+      .then(movies => {
+        if (!movies.length) {
+          return sw.registerSync('sync-rated-movies', {message: 'indexedDB is empty!'})
+        }
+
+        sw.sendMessageToClient(sw.clientID, {type: 'riba', movies})
+      })
+      .catch(err => sw.registerSync('sync-rated-movies', err))
+    })
+  },
+  // getAllRatedMoviesFromRemoteDB() {
+  //   sw.makeRequestForRatedMovies()
+  //   .then(response => response.json())
+  //   .then(movies => sw.sendMessageToClient(sw.clientID, {type: 'riba', movies}))
+    // .catch(err => sw.registerSync('sync-rated-movies', err))
+  // },
   getAllMoviesFromIndexedDB() {
-    return idbKeyval.keys().then(keys => {
-      Promise.all(keys.map(id => idbKeyval.get(id).then(movie => movie)))
-        .then(movies => movies)
-        .then(movies => sw.sendMessageToClient(sw.clientID, {type: 'riba', movies}))
-        .catch(err => console.error('Error: can\'t get movies from indexedDB.', err))
-    });
+    return idbKeyval.keys().then(keys =>
+     Promise.all(keys.map(id => idbKeyval.get(id).then(movie => movie))));
   },
   getMovieFromIndexedDB(id) {
     return idbKeyval.get(id)

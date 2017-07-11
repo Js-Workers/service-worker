@@ -9,9 +9,9 @@ const app = {
         .then(registration => navigator.serviceWorker.ready)
         .then(sw => {
           this.sw = sw;
-          this.sw.active.postMessage({type: 'riba', body: {}});
+          this.sw.active.postMessage({type: 'sync-upcoming-movies', body: { tag: 'get-upcoming-movies'}});
+          this.sw.active.postMessage({type: 'sync-rated-movies', body: { tag: 'get-rated-movies'}});
           this.getLikedMovies();
-          this.getupcomingMovies();
         })
         .catch(error => console.error('error', error));
     }
@@ -19,11 +19,6 @@ const app = {
   getLikedMovies() {
     this.sw.sync.register('get-movies')
       .then(() => console.log('Registered "get-movie" sync'))
-      .catch(err => console.error('Error: can\'t register "get-movie"', err));
-  },
-  getupcomingMovies() {
-    this.sw.sync.register('get-upcoming-movies')
-      .then(() => console.log('Registered "get-upcoming-movies" sync'))
       .catch(err => console.error('Error: can\'t register "get-movie"', err));
   },
   requestNotificationPermission() {
