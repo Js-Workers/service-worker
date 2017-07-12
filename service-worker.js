@@ -145,12 +145,23 @@ const sw = {
     }
   },
   syncRemoveMovie() {
-    console.error('syncRemoveMovie');
+    logger.success('syncRemoveMovie');
+
+    fetch(this.requestForRemovedMovies)
+    .then(response => response.json())
+    .then(movie => console.error(`Movie ${movie.title} was removed from remote DB`))
+  },
+  createRequestForRemovingMovie(event) {
+    const {externalMovieId} = sw.getMoviePropsFromEvent(event);
+    const queryString = `apiKey=${config.MLAB_API_KEY}`;
+    const externalApi = endpoints.removeMovie(externalMovieId, queryString);
+    const initObj = { method: 'DELETE' };
+
+    return new Request(externalApi, initObj);
   },
   removeMovie(event) {
     const {body, localMovieId, externalMovieId} = sw.getMoviePropsFromEvent(event);
-    const queryString = `apiKey=${config.MLAB_API_KEY}`;
-    const initObj = { method: 'DELETE' };
+    this.requestForRemovedMovies = sw.createRequestForRemovingMovie(event);
 
     // TODO: First - remove from indexedDB
     idbKeyval.delete(localMovieId);
@@ -158,7 +169,7 @@ const sw = {
 
     // TODO: Second - try remove from remote DB. Check if movie exist in remote DB (by externalMovieId)
     if (externalMovieId) {
-      fetch(endpoints.removeMovie(externalMovieId, queryString), initObj)
+      fetch(this.requestForRemovedMovies.clone())
       .then(response => response.json())
       .then(data => {
         console.error('movie removed from remote DB', data);
@@ -172,18 +183,29 @@ const sw = {
     }
   },
   syncRateMovie() {
-    console.error('syncRateMovie');
+    logger.success('syncRateMovie');
+
+    fetch(this.requestForRatedMovies)
+    .then(response => response.json())
+    .then(movie => console.error(`Movie ${movie.title} was saved to remote DB`));
   },
-  rateMovie(event) {
+  createRequestForRateMovies(event) {
     const {body} = sw.getMoviePropsFromEvent(event);
     const queryString = `apiKey=${config.MLAB_API_KEY}`;
+    const externalApi = endpoints.addMovie(queryString);
     const initObj = {
       method: 'POST',
       headers: new Headers({'Content-Type': 'application/json'}),
       body: JSON.stringify(body)
     };
 
-    const sendMsgToAllClients = movies => sw.sendMessageToAllClients({type: 'rate', body: movies});
+    return new Request(externalApi, initObj);
+  },
+  rateMovie(event) {
+    const {body} = sw.getMoviePropsFromEvent(event);
+    this.requestForRatedMovies = sw.createRequestForRateMovies(event);
+
+    const sendMsgToAllClients = movie => sw.sendMessageToAllClients({type: 'rate', body: movie});
 
     // TODO: First - save movie to indexedDB
     sw.saveMovieToIndexedDB(body)
@@ -194,7 +216,7 @@ const sw = {
     .catch(err => console.error('Error: ', err));
 
     // TODO: Second - save movie to remote DB
-    fetch(endpoints.addMovie(queryString), initObj)
+    fetch(this.requestForRatedMovies.clone())
       .then(response => response.json())
       .then(movie => {
         logger.success('Movie stored to remote DB');
@@ -203,7 +225,7 @@ const sw = {
       .catch(error => {
         // TODO: No Internet connection - register sync
         console.error('Error: can\'t save movie to remote DB.', error);
-        sw.registerSync('rate-movie');
+        sw.registerSync('rate-movie', error);
       });
   },
   saveMovieToIndexedDB(movie) {
@@ -263,11 +285,18 @@ const sw = {
         console.error('Error: ', err);
 
         caches.match(request)
-          .then(response => response.json())
           .then(response => {
-            sw.sendMessageToClient(sw.clientID, {type: 'loaded-upcoming-movies', movies: response.results});
+            if (response) {
+              return response.json()
+              .then(response => {
+                sw.sendMessageToClient(sw.clientID, {type: 'loaded-upcoming-movies', movies: response.results});
+              })
+              .catch(err => console.error('Error', err));
+            }
+
+            sw.registerSync('get-upcoming-movies', err)
           })
-          .catch(err => sw.registerSync('get-upcoming-movies', err))
+          .catch(err => console.error('Error', err));
       });
   },
   registerSync(tag, err) {

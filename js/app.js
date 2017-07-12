@@ -11,15 +11,9 @@ const app = {
           this.sw = sw;
           this.sw.active.postMessage({type: 'sync-upcoming-movies', body: { tag: 'get-upcoming-movies'}});
           this.sw.active.postMessage({type: 'sync-rated-movies', body: { tag: 'get-rated-movies'}});
-          this.getLikedMovies();
         })
         .catch(error => console.error('error', error));
     }
-  },
-  getLikedMovies() {
-    this.sw.sync.register('get-movies')
-      .then(() => console.log('Registered "get-movie" sync'))
-      .catch(err => console.error('Error: can\'t register "get-movie"', err));
   },
   requestNotificationPermission() {
     Notification.requestPermission(result => {
@@ -65,13 +59,13 @@ const app = {
 
       switch (type) {
       case 'rate':
-        return this.insertMovie(body);
+        return this.insertRatedMovie(body);
       case 'remove':
         return this.removeMovieFromList(body.id);
       case 'loaded-upcoming-movies':
-        return this.showImages(event.data.movies);
+        return this.showUpcominMovies(event.data.movies);
       case 'loaded-rated-movies':
-        event.data.movies.forEach(movie => this.insertMovie(movie))
+        event.data.movies.forEach(movie => this.insertRatedMovie(movie))
       }
     });
   },
@@ -99,32 +93,13 @@ const app = {
       }
     }
   },
-  prepareTemplate (template, obj = {}) {
-    const regexp = /<%=(.*?)%>/g;
-    const replacer = (match, p1) => obj[p1.trim()] || p1.trim();
+  insertRatedMovie(movie) {
+    this.elements.moviesList.insertAdjacentHTML('afterbegin', getRatedMovieTemplate(movie));
 
-    return template.replace(regexp, replacer);
-  },
-  insertMovie(movie) {
-    const {id, title, overview, poster_path} = movie;
-    const template = document.getElementById('move-item').innerHTML;
-    const preparedTemplate = this.prepareTemplate(template, {
-      id, title, overview, poster_path
-    });
+    const removeBtnList = this.elements.moviesList.querySelectorAll('.remove-movie');
+    const [removeBtn] = removeBtnList;
 
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = preparedTemplate;
-    wrapper.id = `movie-${id}`;
-
-    const [firstChild] = this.elements.moviesList.children;
-
-    this.elements.moviesList.insertBefore(wrapper, firstChild);
-
-    const removeBtn = wrapper.querySelector('.remove-movie');
-
-    removeBtn.addEventListener('click', () => {
-      this.removeMovie(movie);
-    });
+    removeBtn.addEventListener('click', () => this.removeMovie(movie));
   },
   toggleStatus(e) {
     const {status} = this.elements;
@@ -144,27 +119,31 @@ const app = {
     const img = document.getElementById(id);
     img.parentNode.removeChild(img);
   },
-  showImages(movies) {
+  showUpcominMovies(movies) {
     this.movies = movies;
 
     movies.forEach((item, index) => {
-      const div = document.createElement('div');
-      const img = document.createElement('img');
-
-      div.classList.add('carousel-item');
-
-      if (index === 0) {
-        div.classList.add('active');
-      }
-
-      img.src = `${config.IMG_POSTER_DOMAIN}${item.poster_path}`;
-      img.id = item.id;
-
-      div.appendChild(img);
-
-      this.elements.content.appendChild(div);
+      this.elements.content.insertAdjacentHTML('beforeend', getCarouselItemTemplate(item, index));
     });
   }
 };
 
 app.initialize();
+
+function getRatedMovieTemplate(movie) {
+  return `<figure class="movie-item" id="movie-${movie.id}">
+    <div class="movie-img">
+      <img src="https://image.tmdb.org/t/p/w300${movie.poster_path}">
+    </div>
+    <figcaption class="title">
+      <h3>${movie.title}<span class="remove-movie">✖</span></h3>
+      <p>${movie.overview}</p>
+    </figcaption>
+  </figure>`;
+}
+
+function getCarouselItemTemplate (item, index) {
+  return `<div class="carousel-item ${index === 0 ? 'active' : ''}">
+    <img src="https://image.tmdb.org/t/p/w300${item.poster_path}" id="${item.id}">
+  </div>`;
+}
