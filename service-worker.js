@@ -303,26 +303,26 @@ const sw = {
     .catch(err => {
       console.error('Error: ', err);
 
-      caches.match(request)
-      .then(response => {
-        return response ? response.json() : [];
-      })
+      sw.getAllMoviesFromIndexedDB()
       .then(movies => {
-        if (movies.length) {
-          return sendMsgToClient(movies);
+        if (!movies.length) {
+          caches.match(request)
+          .then(response => {
+            return response ? response.json() : [];
+          })
+          .then(movies => {
+            if (movies.length) {
+              return sendMsgToClient(movies);
+            }
+
+            sw.registerSync('get-rated-movies', 'Error: cache is empty!');
+          })
+          .catch(err => console.error('Error: ', err));
         }
 
-        sw.getAllMoviesFromIndexedDB()
-        .then(movies => {
-          if (!movies.length) {
-            return sw.registerSync('get-rated-movies', err)
-          }
-
-          sendMsgToClient(movies);
-        })
-        .catch(err => console.error('Error: can\'t get movies from indexedDB'))
+        sendMsgToClient(movies);
       })
-      .catch(err => console.error('Error: ', err));
+      .catch(err => console.error('Error: can\'t get movies from indexedDB'))
     })
   },
   getAllMoviesFromIndexedDB() {
