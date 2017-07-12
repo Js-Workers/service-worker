@@ -5,7 +5,7 @@ const app = {
     this.fireListeners();
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js', {scope: '/'})
+      navigator.serviceWorker.register('service-worker.js')
         .then(registration => navigator.serviceWorker.ready)
         .then(sw => {
           this.sw = sw;
