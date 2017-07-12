@@ -4,7 +4,6 @@ self.importScripts('./js/config.js');
 
 const CACHE_VERSION = 'v1';
 const RESOURCES = [
-  '/',
   '/service-worker/index.html',
   '/service-worker/js/app.js',
   '/service-worker/js/config.js',
