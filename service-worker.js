@@ -1,4 +1,4 @@
-self.importScripts('./node_modules/idb-keyval/idb-keyval.js');
+self.importScripts('./vendors/idb-keyval/idb-keyval.js');
 self.importScripts('./js/endpoints.js');
 self.importScripts('./js/config.js');
 
