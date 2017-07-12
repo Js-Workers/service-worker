@@ -111,47 +111,54 @@ const sw = {
     switch (event.tag) {
     case 'get-upcoming-movies':
       return event.waitUntil(sw.syncUpcomingMovies());
-    case 'sync-rated-movies':
+    case 'get-rated-movies':
       return event.waitUntil(sw.syncRatedMovies());
+    case 'remove-movie':
+      return event.waitUntil(sw.syncRemoveMovie());
+    case 'rate-movie':
+      return event.waitUntil(sw.syncRateMovie());
     }
   },
-  oMessage(event) {
-    const {data} = event;
-    const {id: clientID} = event.source;
+  getMoviePropsFromEvent(event) {
+    const {data, source} = event;
+    const {id: clientID} = source;
     const {type, body} = data;
-    const {id} = body;
+    const {id: localMovieId, _id = {}} = body;
+    const {$oid: externalMovieId} = _id;
 
+    return {type, body, clientID, localMovieId, externalMovieId};
+  },
+  oMessage(event) {
     logger.success('oMessage');
 
-    sw.clientID = clientID;
+    sw.clientID = event.source.id;
 
-    switch (type) {
+    switch (event.data.type) {
     case 'rate':
-      return sw.rateMovie(body, event);
+      return sw.rateMovie(event);
     case 'remove':
-      return sw.removeMovie(id, body);
+      return sw.removeMovie(event);
     case 'sync-upcoming-movies':
       return sw.getUpcomingMovies();
     case 'sync-rated-movies':
       return sw.getRatedMovies();
     }
   },
-  removeMovie(id, body) {
+  syncRemoveMovie() {
+    console.error('syncRemoveMovie');
+  },
+  removeMovie(event) {
+    const {body, localMovieId, externalMovieId} = sw.getMoviePropsFromEvent(event);
     const queryString = `apiKey=${config.MLAB_API_KEY}`;
     const initObj = { method: 'DELETE' };
 
-    console.error('body', body);
-
-    // TODO: fix movie removing
-    const {_id: {}} = body;
-    const {$oid: movieId} = _id;
-
     // TODO: First - remove from indexedDB
-    idbKeyval.delete(id);
+    idbKeyval.delete(localMovieId);
     sw.sendMessageToClient(sw.clientID, {type: 'remove', body});
 
-    // TODO: Second - try remove from remote DB
-    fetch(endpoints.removeMovie(movieId, queryString), initObj)
+    // TODO: Second - try remove from remote DB. Check if movie exist in remote DB (by externalMovieId)
+    if (externalMovieId) {
+      fetch(endpoints.removeMovie(externalMovieId, queryString), initObj)
       .then(response => response.json())
       .then(data => {
         console.error('movie removed from remote DB', data);
@@ -159,9 +166,16 @@ const sw = {
       .catch(error => {
         // TODO: No Internet connection - register sync
         console.error('Error: can\'t remove movie to remote DB.', error);
+
+        sw.registerSync('remove-movie');
       });
+    }
   },
-  rateMovie(body) {
+  syncRateMovie() {
+    console.error('syncRateMovie');
+  },
+  rateMovie(event) {
+    const {body} = sw.getMoviePropsFromEvent(event);
     const queryString = `apiKey=${config.MLAB_API_KEY}`;
     const initObj = {
       method: 'POST',
@@ -176,7 +190,8 @@ const sw = {
     .then(movie => {
       sw.showNotification(movie);
       sendMsgToAllClients(movie);
-    });
+    })
+    .catch(err => console.error('Error: ', err));
 
     // TODO: Second - save movie to remote DB
     fetch(endpoints.addMovie(queryString), initObj)
@@ -188,6 +203,7 @@ const sw = {
       .catch(error => {
         // TODO: No Internet connection - register sync
         console.error('Error: can\'t save movie to remote DB.', error);
+        sw.registerSync('rate-movie');
       });
   },
   saveMovieToIndexedDB(movie) {
@@ -299,7 +315,7 @@ const sw = {
         sw.getAllMoviesFromIndexedDB()
         .then(movies => {
           if (!movies.length) {
-            return sw.registerSync('sync-rated-movies', err)
+            return sw.registerSync('get-rated-movies', err)
           }
 
           sendMsgToClient(movies);
