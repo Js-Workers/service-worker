@@ -14,7 +14,7 @@ const RESOURCES = [
   '/img/like.svg',
   '/utils/carousel/carousel.css',
   '/utils/carousel/carousel.js',
-  '/node_modules/idb-keyval/idb-keyval.js'
+  '/vendors/idb-keyval/idb-keyval.js'
 ];
 
 const logger = {
