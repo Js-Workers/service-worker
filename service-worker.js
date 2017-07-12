@@ -5,16 +5,16 @@ self.importScripts('./js/config.js');
 const CACHE_VERSION = 'v1';
 const RESOURCES = [
   '/',
-  'index.html',
-  '/js/app.js',
-  '/js/config.js',
-  '/js/endpoints.js',
-  '/css/styles.css',
-  '/img/dislike.svg',
-  '/img/like.svg',
-  '/utils/carousel/carousel.css',
-  '/utils/carousel/carousel.js',
-  '/vendors/idb-keyval/idb-keyval.js'
+  '/service-worker/index.html',
+  '/service-worker/js/app.js',
+  '/service-worker/js/config.js',
+  '/service-worker/js/endpoints.js',
+  '/service-worker/css/styles.css',
+  '/service-worker/img/dislike.svg',
+  '/service-worker/img/like.svg',
+  '/service-worker/utils/carousel/carousel.css',
+  '/service-worker/utils/carousel/carousel.js',
+  '/service-worker/vendors/idb-keyval/idb-keyval.js'
 ];
 
 const logger = {
