@@ -151,8 +151,7 @@ const sw = {
     .then(response => response.json())
     .then(movie => console.error(`Movie ${movie.title} was removed from remote DB`))
   },
-  createRequestForRemovingMovie(event) {
-    const {externalMovieId} = sw.getMoviePropsFromEvent(event);
+  createRequestForRemovingMovie(externalMovieId) {
     const queryString = `apiKey=${config.MLAB_API_KEY}`;
     const externalApi = endpoints.removeMovie(externalMovieId, queryString);
     const initObj = { method: 'DELETE' };
@@ -160,27 +159,31 @@ const sw = {
     return new Request(externalApi, initObj);
   },
   removeMovie(event) {
-    const {body, localMovieId, externalMovieId} = sw.getMoviePropsFromEvent(event);
-    this.requestForRemovedMovies = sw.createRequestForRemovingMovie(event);
+    const {body, localMovieId} = sw.getMoviePropsFromEvent(event);
 
-    // TODO: First - remove from indexedDB
-    idbKeyval.delete(localMovieId);
-    sw.sendMessageToClient(sw.clientID, {type: 'remove', body});
+    idbKeyval.get(localMovieId)
+    .then(movie => {
+      const externalMovieId = movie ? movie._id.$oid : '';
 
-    // TODO: Second - try remove from remote DB. Check if movie exist in remote DB (by externalMovieId)
-    if (externalMovieId) {
-      fetch(this.requestForRemovedMovies.clone())
-      .then(response => response.json())
-      .then(data => {
-        console.error('movie removed from remote DB', data);
-      })
-      .catch(error => {
-        // TODO: No Internet connection - register sync
-        console.error('Error: can\'t remove movie to remote DB.', error);
+      idbKeyval.delete(localMovieId);
+      sw.sendMessageToAllClients({type: 'remove', body});
 
-        sw.registerSync('remove-movie');
-      });
-    }
+      if (externalMovieId) {
+        this.requestForRemovedMovies = sw.createRequestForRemovingMovie(externalMovieId);
+
+        fetch(this.requestForRemovedMovies.clone())
+        .then(response => response.json())
+        .then(data => {
+          console.error('movie removed from remote DB', data);
+        })
+        .catch(error => {
+          // TODO: No Internet connection - register sync
+          console.error('Error: can\'t remove movie to remote DB.', error);
+
+          sw.registerSync('remove-movie', error);
+        });
+      }
+    });
   },
   syncRateMovie() {
     logger.success('syncRateMovie');
@@ -220,6 +223,7 @@ const sw = {
       .then(response => response.json())
       .then(movie => {
         logger.success('Movie stored to remote DB');
+        sw.saveMovieToIndexedDB(movie);
         console.error('movie', movie);
       })
       .catch(error => {
@@ -317,7 +321,10 @@ const sw = {
 
     fetch(request)
     .then(response => response.json())
-    .then(movies => sw.sendMessageToClient(sw.clientID, {type: 'loaded-rated-movies', movies}))
+    .then(movies => {
+      movies.forEach(sw.saveMovieToIndexedDB);
+      sw.sendMessageToClient(sw.clientID, {type: 'loaded-rated-movies', movies})
+    });
   },
   getRatedMovies() {
     const request = sw.createRequestForRatedMovies();
@@ -328,7 +335,10 @@ const sw = {
     .then(cache => cache.add(request))
     .then(() => caches.match(request))
     .then(response => response.json())
-    .then(movies => sendMsgToClient(movies))
+    .then(movies => {
+      sendMsgToClient(movies);
+      movies.forEach(sw.saveMovieToIndexedDB);
+    })
     .catch(err => {
       console.error('Error: ', err);
 
