@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    .brick {
+      width: 100px;
+      height: 100px;
+      background: pink;
+      outline: 1px solid purple;
+      position: relative;
+      margin: 0 0 40px 0;
+      left: 0;
+      right: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="brick" class="brick"></div>
+
+  <div>
+    <button id="btn">Show alert</button>
+  </div>
+  <div>
+    <button id="move-btn">Start moving</button>
+  </div>
+  <div>
+    <button id="calc-btn">Calculate something</button>
+  </div>
+
+  <script>
+    const btn = document.getElementById('btn');
+    const brick = document.getElementById('brick');
+    const moveBtn = document.getElementById('move-btn');
+    const calcBtn = document.getElementById('calc-btn');
+
+    btn.addEventListener('click', () => {
+      alert('This alert blocks js');
+    });
+
+    calcBtn.addEventListener('click', () => {
+      let i = 0;
+      while (i < 50000) {
+        console.log(i++);
+      }
+    });
+
+    const documentWidth = document.body.clientWidth;
+    const brickWidth = brick.clientWidth;
+
+    moveBtn.addEventListener('click', () => {
+      const moveLeft = () => {
+        const timer1 = setInterval(() => {
+          if (brick.offsetLeft + brickWidth < documentWidth) {
+            brick.style.left = `${brick.offsetLeft + 2}px`;
+          } else {
+          clearInterval(timer1);
+          moveRight();
+          }
+        }, 50);
+      };
+
+      const moveRight = () => {
+        const timer2 = setInterval(() => {
+          if (brick.offsetLeft >= 8) {
+            brick.style.left = `${brick.offsetLeft - 18}px`;
+          } else {
+            clearInterval(timer2);
+            moveLeft();
+          }
+        }, 50);
+      };
+
+      moveLeft();
+    });
+
+  </script>
+</body>
+</html>
