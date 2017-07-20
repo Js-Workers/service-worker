@@ -17,30 +17,77 @@
       left: 0;
       right: 0;
     }
+    .table {
+      width: 100%;
+      display: table;
+    }
+    .table-cell {
+      display: table-cell;
+    }
   </style>
 </head>
 <body>
 
   <div id="brick" class="brick"></div>
 
-  <div>
-    <button id="btn">Show alert</button>
-  </div>
-  <div>
-    <button id="move-btn">Start moving</button>
-  </div>
-  <div>
-    <button id="calc-btn">Calculate something</button>
-  </div>
-
-  <div>
-    <button id="send-msg-to-worker">Send Message to Worker</button>
+  <div class="table">
+    <div class="table-cell">
+      <div>
+        <button id="btn">Show alert</button>
+      </div>
+      <div>
+        <button id="move-btn">Start moving</button>
+      </div>
+      <div>
+        <button id="calc-btn">Calculate something</button>
+      </div>
+    </div>
+    <div class="table-cell">
+      <div>
+        <button id="send-msg-to-worker">Send Message to Worker</button>
+      </div>
+    </div>
+    <div class="table-cell">
+      <input id="fib-value" type="number">
+      <div>
+        <button id="calc-fib-btn">Calculate Fibonacci sequence</button>
+      </div>
+      <div>
+        <button id="calc-fib-ww-btn">Calculate Fibonacci sequence in Worker</button>
+      </div>
+    </div>
   </div>
 
   <script>
 
     const sendMessageToWorkerBtn = document.getElementById('send-msg-to-worker');
+    const calcFibBtn = document.getElementById('calc-fib-btn');
+    const calcFibWithWorkerBtn = document.getElementById('calc-fib-ww-btn');
+    const fibValueInput = document.getElementById('fib-value');
+
     const app = {};
+
+    function fib(n) {
+      return n <= 1 ? n : fib(n - 1) + fib(n - 2);
+    }
+
+    calcFibBtn.addEventListener('click', () => {
+      const {value} = fibValueInput;
+
+      if (value) {
+        console.time('factorial');
+        console.log(fib(value));
+        console.timeEnd('factorial');
+      }
+    });
+
+    calcFibWithWorkerBtn.addEventListener('click', () => {
+      const {value} = fibValueInput;
+
+      if (value) {
+        app.worker.postMessage({type: 'fib', body: value});
+      }
+    });
 
     if (window.Worker) {
       app.worker = new Worker('web-worker.js');
