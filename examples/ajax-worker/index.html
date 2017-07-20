@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script src="send-requests.js"></script>
+</head>
+<body>
+  <button onClick="btnClick()">Click me</button>
+  <button onClick="sendRequestsFromMainThread()">Send Sync Requests from main thread</button>
+  <button onClick="sendRequestsFromWW()">Send Sync Requests from WW</button>
+<script>
+  const app = {};
+
+  if (window.Worker) {
+    app.worker = new Worker('ajax-worker.js');
+  }
+
+  const urls = new Array(100).fill('https://jsonplaceholder.typicode.com/posts/1');
+
+  function sendRequestsFromMainThread() {
+    sendRequests(urls);
+  }
+
+  function sendRequestsFromWW() {
+    app.worker.postMessage(urls);
+  }
+
+  function btnClick() {
+    console.error('btn clicked!');
+  }
+
+</script>
+</body>
+</html>

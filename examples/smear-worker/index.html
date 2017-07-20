@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    .brick {
+      width: 100px;
+      height: 100px;
+      background: pink;
+      outline: 1px solid purple;
+      position: relative;
+      margin: 0 0 40px 0;
+      left: 0;
+      right: 0;
+    }
+    .img {
+      width: 100%;
+    }
+  </style>
+  <script src="smear.js"></script>
+</head>
+<body>
+
+<div id="brick" class="brick"></div>
+<div>
+  <button id="move-btn">Start moving</button>
+</div>
+
+<img id="img" class="img" src="Big_&_Small_Pumkins.JPG" />
+
+<div>
+  <button id="btn-main">Smear in main thread</button>
+  <button id="btn-worker">Smear in Worker thread</button>
+</div>
+
+<script>
+  const btnMain = document.getElementById('btn-main');
+  const btnWorker = document.getElementById('btn-worker');
+  const img = document.getElementById('img');
+
+  btnMain.addEventListener('click', () => {
+    // Create an offscreen <canvas> the same size as the image
+    var canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    // Copy the image into the canvas, then extract its pixels
+    var context = canvas.getContext("2d");
+    context.drawImage(img, 0, 0);
+    var pixels = context.getImageData(0,0,img.width,img.height)
+
+    var smeared_pixels = smear(pixels);                // Pixels from worker
+//      context.putImageData(smeared_pixels, 0, 0); // Copy them to the canvas
+//      img.src = canvas.toDataURL();               // And then to the img
+//      canvas.width = canvas.height = 0;           // Don't keep pixels around
+  });
+
+  btnWorker.addEventListener('click', () => {
+    // Create an offscreen <canvas> the same size as the image
+    var canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    // Copy the image into the canvas, then extract its pixels
+    var context = canvas.getContext("2d");
+    context.drawImage(img, 0, 0);
+    var pixels = context.getImageData(0,0,img.width,img.height)
+
+    // Send the pixels to a worker thread
+    var worker = new Worker("SmearWorker.js");      // Create worker
+    worker.postMessage(pixels);                     // Copy and send pixels
+
+    // Register a handler to get the worker's response
+    worker.onmessage = function(e) {
+      var smeared_pixels = e.data;                // Pixels from worker
+      context.putImageData(smeared_pixels, 0, 0); // Copy them to the canvas
+      img.src = canvas.toDataURL();               // And then to the img
+      worker.terminate();                         // Stop the worker thread
+      canvas.width = canvas.height = 0;           // Don't keep pixels around
+    }
+  });
+
+
+</script>
+<script src="brick.js"></script>
+</body>
+</html>
