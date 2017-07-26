@@ -91,6 +91,7 @@
 
     if (window.Worker) {
       app.worker = new Worker('web-worker.js');
+      app.worker2 = new Worker('web-worker-2.js');
 
       app.worker.addEventListener('message', event => {
         console.error('Response from Worker', event);

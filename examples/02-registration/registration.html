@@ -22,6 +22,15 @@
       .catch(error => {
         console.error('Registration error', error);
       });
+
+      navigator.serviceWorker.register('another.sw.js', {scope: './foo'})
+      .then(registration => navigator.serviceWorker.ready)
+      .then(registration => {
+        console.error(1);
+      })
+      .catch(error => {
+        console.error(2);
+      });
     }
   </script>
 </body>
