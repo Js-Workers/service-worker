@@ -44,7 +44,7 @@ const sw = {
 
     return self.skipWaiting();
   },
-  onActivate(event) {``
+  onActivate(event) {
     logger.success('activate');
 
     event.waitUntil(
