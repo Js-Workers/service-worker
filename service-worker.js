@@ -37,14 +37,14 @@ const sw = {
     self.addEventListener('message', sw.oMessage);
     self.addEventListener('push', sw.onPush);
   },
-  onInstall(event) {
+  onInstall() {
     logger.success('install');
 
-    event.waitUntil(
-      caches.open(CACHE_VERSION).then(cache => cache.addAll(RESOURCES))
-    );
+    caches.open(CACHE_VERSION).then(cache => cache.addAll(RESOURCES));
+
+    return self.skipWaiting();
   },
-  onActivate(event) {
+  onActivate(event) {``
     logger.success('activate');
 
     event.waitUntil(
