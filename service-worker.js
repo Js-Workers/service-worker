@@ -5,7 +5,7 @@ self.importScripts('./js/config.js');
 const CACHE_VERSION = 'v1';
 const RESOURCES = [
   '/',
-  'index.html',
+  '/index.html',
   '/js/app.js',
   '/js/config.js',
   '/js/endpoints.js',
